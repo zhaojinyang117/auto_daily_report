@@ -3,4 +3,5 @@
 2、使用python做smtp自动发送测试
 3、使用python利用gemini提示词做自动邮件程序
 4、at脚本的每日运行
+项目链接：https://github.com/zhaojinyang117/auto_daily_report
 </正文>
