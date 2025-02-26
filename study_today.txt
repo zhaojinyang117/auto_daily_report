@@ -1,8 +1,3 @@
 <正文>
-1、网络代理环境搭建
-2、使用python做smtp自动发送测试
-3、使用python利用gemini提示词做自动邮件程序
-4、at脚本的每日运行
-5、尝试爬取notion文章，但在性能限制下对动态页面无能为力（1c1g）
-6、cs61a hw07 笔记：https://aliceaierlanta.notion.site/2025-02-24-24sp-hw07-5e84b8ca70734a818b615fc83e59837a
+1、cs61a lecture 29 scheme lists
 </正文>
