@@ -1,3 +1,4 @@
 <正文>
-1、cs61a lecture 29 scheme lists
+1、cs61a lecture 29 scheme lists 链接：https://aliceaierlanta.notion.site/2025-2-26-lecture29-scheme-lists-1a6de645d080804da353e837a8d60f95
+2、cs61a hw08
 </正文>
