@@ -1,4 +1,5 @@
 <正文>
 1、cs61a lecture 29 scheme lists 链接：https://ggtmy31755.notion.site/2025-2-26-lecture29-scheme-lists-1a6de645d080804da353e837a8d60f95
 2、cs61a hw08 链接：https://ggtmy31755.notion.site/2025-2-26-sp24-hw08-1a6de645d080808dadc9deb566cc6ad9
+3、unity 3D 对人物模型绑骨的一些了解
 </正文>
