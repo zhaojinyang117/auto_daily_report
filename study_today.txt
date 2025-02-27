@@ -1,4 +1,5 @@
 <正文>
 1、cs61a hw08 链接： @https://ggtmy31755.notion.site/2025-2-26-sp24-hw08-1a6de645d080808dadc9deb566cc6ad9
 2、cs61a lecture30 calculator 链接：@https://ggtmy31755.notion.site/2025-2-27-lecture30-calculator-1a7de645d08080adb3dac87dc514fcf9?pvs=4
+3、开始尝试 用python写一个scheme的计算器的解释器
 </正文>
