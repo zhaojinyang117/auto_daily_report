@@ -1,3 +1,5 @@
 <正文>
 1、了解了一下新发布的天价模型 GPT4.5 —— “GPT-4.5 has an API price of $75/1M input and $150/1M output.”
+2、__iter__的相关知识
+3、Enum的相关知识
 </正文>
