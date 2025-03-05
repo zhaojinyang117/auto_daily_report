@@ -1,3 +1,5 @@
 <正文>
 昨天完成了lab10，简单解释器完成： https://www.learncs.site/docs/curriculum-resource/cs61a/lab/sol-lab10， https://ggtmy31755.notion.site/2025-3-4-24sp-lab10-interpreters-1acde645d0808048a59fceb17c91d63f?pvs=4
+
+1、更新了之前的数据报告处理脚本，在原有的通过 OCR 电话号码匹配 csv 文件的基础上添加了匹配 log 文件的同类型逻辑
 </正文>
