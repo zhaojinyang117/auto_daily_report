@@ -1,30 +1,57 @@
 <正文>
-1、**Django 路由配置**
+## 使用正则路由（`re_path`）
 
-- 在 [urls.py](http://urls.py) 中可以添加路由路径，将 URL 映射到对应的视图函数
-- 路由和视图是多对一映射关系，多个路径可以映射到同一个函数，但一个路径不能映射到多个函数
+1. **位置参数**：使用 `()` 匹配路径中的正则参数，然后在视图函数中通过形参传递。
+   ```python
+   re_path("articles/(\d{4})/(\d{2})/", articles.views.article_detail)
+   ```
 
-**视图函数实现**
+   ```python
+   def article_detail(request: HttpRequest, year: int, month: int):
+       return HttpResponse(f"year: {year}, month: {month}")
+   ```
 
-- 视图函数可以直接返回 HttpResponse 文本响应
-- 使用 render 函数可以返回渲染后的 HTML 页面
-- 可以通过目录结构（如 app01/index.html）来组织模板文件
+2. **有名分组**：通过 `?P` 命名正则分组，然后在视图函数中使用关键字传参。
+   ```python
+   re_path("articles/(?P\d{4})/(?P\d{1,2})/", articles.views.article_detail)
+   ```
 
-**模板渲染**
+   ```python
+   def article_detail(request: HttpRequest, year: int, month: int):
+       return HttpResponse(f"year: {year}, month: {month}")
+   ```
 
-- 在视图函数中可以通过字典传递数据到模板
-- 在 HTML 模板中使用双大括号 {{ }} 作为变量占位符进行数据渲染
----
-2、**正则路由实现方法**
+## 路由分发
 
-- 使用re_path实现正则路由，可以通过括号()匹配路径中的正则参数
+1. **目的**：减少项目根目录中的 URL 路由重量，实现解耦。
+2. **方法**：在子应用中创建新的 `urls.py` 文件，然后通过 `include` 函数在主路由中包括这些 URL。
+   ```python
+   path("home/", include("app01.urls"))
+   ```
 
-**URL配置示例**
+## 自定义路由转换器
 
-- 在urlpatterns中使用re_path配置路由，可以捕获年份(\d{4})和月份(\d{2})等数字参数
+1. **定义转换器类**：
+   ```python
+   class MobileConverter(object):
+       regex = r"1[3-9]\d{9}"
 
-**视图函数处理**
+       def to_python(self, value: str):
+           return value
+   ```
 
-- 在视图函数中可以通过形参接收匹配到的参数，例如year和month
-- 视图函数可以处理这些参数并返回相应的响应
+2. **注册转换器**：
+   ```python
+   register_converter(MobileConverter, "mobile")
+   ```
+
+3. **使用转换器**：
+   ```python
+   path("/", app01.views.mobile),
+   ```
+
+   ```python
+   def mobile(request: HttpRequest, mobile_number: str):
+       return HttpResponse(f"mobile: {mobile_number}")
+   ```
 </正文>
