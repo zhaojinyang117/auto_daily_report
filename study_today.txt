@@ -35,4 +35,23 @@ Django网站开发：今日主要工作是完成了Django网站的用户登录�
 导航菜单设置：配置了导航菜单，包含首页、实时时钟及登录功能导航。
 
 页面布局：优化了页面布局，使其在不同设备上呈现最佳效果。
+
+总结一下`render`方法的原理如下：
+
+1. **获取模板文件**：使用类似`get_template()`函数来加载HTML模板文件，通常这些文件位于项目的`templates`目录下。
+
+2. **获取数据**：定义一个字典`context`，该字典包含需要在模板中渲染的数据。例如，包含一个名为`name`的变量及其值`"rain"`，假设模板中有对应的占位符`{{ name }}`。
+
+3. **渲染模板**：通过调用模板的`render()`方法，将上下文数据`context`传入，可能还需要传入当前的请求对象`request`，从而生成最终的渲染后的HTML内容。
+
+通常在Django中，使用`render()`函数时会自动完成以上步骤，如：
+```python
+from django.shortcuts import render
+
+def my_view(request):
+    context = {'name': 'rain'}
+    return render(request, 'index.html', context)
+```
+这行代码自动获取模板文件`index.html`，传入数据，渲染页面，并返回最终结果给客户端。
+
 </正文>
