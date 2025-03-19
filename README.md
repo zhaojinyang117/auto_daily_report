@@ -25,9 +25,9 @@ cd auto_daily_report
 # 安装Python依赖
 pip install -r requirements.txt
 
-# 安装系统依赖（如果需要）
+# 安装系统依赖
 sudo apt-get update
-sudo apt-get install -y at python3-dotenv
+sudo apt-get install -y python3-dotenv
 ```
 
 3. 配置环境变量：
@@ -71,12 +71,13 @@ chmod +x schedule_tasks.sh
 ./schedule_tasks.sh
 ```
 
-脚本会：
-- 自动安装at命令（如果需要）
+脚本功能：
+- 设置时区为北京时间（Asia/Shanghai）
 - 检查已有任务，避免重复设置
-- 设置工作日（周一至周五）的执行计划
+- 配置工作日（周一至周五）的执行计划
 - 每天北京时间20:00自动运行程序
-- 显示所有已设置的任务
+- 自动为未来工作日设置任务
+- 支持每周自动更新下周的任务计划
 
 ## 文件结构
 
@@ -97,4 +98,3 @@ chmod +x schedule_tasks.sh
 - 所有定时任务使用北京时间
 - 只在工作日（周一至周五）执行
 - 需要安装python-dotenv和google-generativeai包
-
