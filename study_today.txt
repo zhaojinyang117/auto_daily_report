@@ -1,49 +1,49 @@
 <正文>
-### 模板渲染原理
+1、### 模板分离技术
 
-1. **获取模板文件**：通过 `get_template()` 方法获取模板文件，假设需要渲染的模板为 `index.html`。
-   
-2. **获取数据**：定义一个字典 `context` 来存储要在模板中渲染的数据。
+把**共用**的html部分给抽出去
 
-3. **渲染模板**：使用 `template.render()` 方法渲染模板，并传入数据和请求对象。
+比如想在每个页面的右下角就加一条广告
 
-### 模板语法
+`{% include “ads.html” %}`
 
-#### 1. 变量渲染
+ads的html并不需要是一个完整的html，只需要是部分组件即可
 
-- **基本用法**：在模板中使用 `{{ val }}` 来显示变量。
-- **过滤器**：使用管道符 `|` 进行过滤，如 `{{ val|filter_name:value }}`。
-- **深度查询**：使用句点符 `.` 进行深度查询，如 `{{ book_list.1 }}` 或 `{{ info.name }}`。
+但是用很多include会导致模板碎片化的问题
 
-#### 2. 标签
+**模板继承**
 
-- **if标签**：条件语句，如 `{% if age > 18 %}...{% endif %}`。
-- **for标签**：循环语句，如 `{% for book in book_list %}...{% endfor %}`。
+`{% extends “base.html” %}`
 
-#### 3. 嵌套和继承
+用`{% block name %} {% blockend %}` 和extends共同使用
 
-模板可以通过继承来构建复杂的结构，如 `{% extends 'base.html' %}`。
+这样就把样式模板给继承过来了
 
-### 过滤器
+然后再改`{% block name %} {% blockend %}`中的内容，便可以重写
 
-- **内置过滤器**：如 `last`、`length`、`default`、`date`等。
-- **自定义过滤器**：在 `templatetags` 目录下创建并注册自己的过滤器。
+默认是覆盖base中的block标签
 
-### locals()函数
+但是可以用`{{ block.super }}`取出父盒的数据
 
-`locals()` 可以自动将当前作用域中的变量传递给模板，但会传递所有局部变量，因此可能影响性能。  
+2、其实就是不想把路由写死
 
-### 示例总结
+比如在urls文件中，给路由加一个`name=ord`参数
 
-在模板渲染中，可以使用变量、标签、过滤器等语法来实现复杂的动态页面渲染。常见用法包括渲染列表、条件判断、循环输出等。自定义过滤器可以扩展模板的功能。
+**在模板函数的应用**
 
-一个小机制：
+然后在模板中用 `{% url ord %}` 代替原本应该写死的超链接的位置
 
-比如你的path是`”login”`，那你在浏览器中输入`login/`就会报错
+**在视图函数的应用**
 
-但如果你的path是`“login/”`，那你在浏览器中输入`login`就会发起一个重定向，指向`login/`
+替代原本写死的重定向
 
-在seetings中，存在一个配置`APPEND_SLASH`默认为`True`
+```python
+from django.urls import reverse
+def f(request):
+	path:str = reverse("ord")
+	return redirect(path)
 
-但如果指明`APPEND_SLASH=False`，那么就不再会进行跳转
+```
+
+3、ORM的基本概念
 </正文>
