@@ -38,3 +38,21 @@ def get_notion_content():
         raise Exception(f"获取GitHub内容失败: {str(e)}")
     except Exception as e:
         raise Exception(f"处理内容失败: {str(e)}")
+
+
+# 添加Scraper类
+class Scraper:
+    """内容获取器类，用于从各种来源获取内容"""
+
+    def __init__(self):
+        """初始化Scraper"""
+        logging.info("初始化内容获取器")
+
+    def get_content(self):
+        """获取内容
+
+        Returns:
+            str: 获取到的内容
+        """
+        logging.info("开始获取内容...")
+        return get_notion_content()

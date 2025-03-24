@@ -43,3 +43,25 @@ def process_with_gemini(content: str) -> str:
         formatted_text = formatted_text.replace("<br><br><br>", "<br><br>")
 
     return formatted_text
+
+
+# 添加GeminiProcessor类
+class GeminiProcessor:
+    """Gemini处理器类，用于调用Gemini API处理内容"""
+
+    def __init__(self):
+        """初始化GeminiProcessor"""
+        # 检查API密钥
+        if not CONFIG["GEMINI_API_KEY"]:
+            raise ValueError("未配置Gemini API密钥")
+
+    def process(self, content: str) -> str:
+        """处理内容并生成格式化的学习总结
+
+        Args:
+            content: 原始学习内容文本
+
+        Returns:
+            str: 格式化的学习总结文本
+        """
+        return process_with_gemini(content)
