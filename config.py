@@ -41,3 +41,20 @@ required_configs = [
 for config_name in required_configs:
     if not CONFIG.get(config_name):
         raise ValueError(f"缺少必要的配置项: {config_name}")
+
+
+# 添加Config类
+class Config:
+    """配置类，用于提供配置访问接口"""
+
+    def __init__(self):
+        """初始化配置"""
+        self.config = CONFIG
+
+    def get(self, key, default=None):
+        """获取配置值"""
+        return self.config.get(key, default)
+
+    def __getattr__(self, name):
+        """通过属性方式访问配置"""
+        return self.config.get(name)
