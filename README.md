@@ -25,9 +25,9 @@ cd auto_daily_report
 # 安装Python依赖
 pip install -r requirements.txt
 
-# 安装系统依赖
+# 安装系统依赖（如果需要）
 sudo apt-get update
-sudo apt-get install -y python3-dotenv
+sudo apt-get install -y at python3-dotenv
 ```
 
 3. 配置环境变量：
@@ -63,21 +63,54 @@ python main.py
 ```
 
 3. 设置定时执行：
-```bash
-# 给脚本添加执行权限
-chmod +x schedule_tasks.sh
 
-# 运行定时任务设置脚本
-./schedule_tasks.sh
-```
+   本地执行：
 
-脚本功能：
-- 设置时区为北京时间（Asia/Shanghai）
+   使用传统方式（crontab）：
+   ```bash
+   # 给脚本添加执行权限
+   chmod +x schedule_tasks.sh
+
+   # 运行定时任务设置脚本
+   ./schedule_tasks.sh
+   ```
+
+   使用uv环境设置定时任务：
+   
+   Linux/macOS:
+   ```bash
+   # 给脚本添加执行权限
+   chmod +x schedule_tasks_uv.sh
+
+   # 运行定时任务设置脚本（使用uv虚拟环境）
+   ./schedule_tasks_uv.sh
+   ```
+   
+   Windows:
+   ```bash
+   # 运行Windows下的定时任务设置脚本
+   schedule_tasks_uv.bat
+   ```
+
+   GitHub Actions执行（推荐）：
+
+   1. 在GitHub仓库设置中添加以下Secrets:
+      - `GEMINI_API_KEY`: 你的Gemini API密钥
+      - `USER_NAME`: 你的姓名
+      - `EMAIL_FROM`: 发件人邮箱
+      - `EMAIL_PASSWORD`: 邮箱密码或应用专用密码
+      - `EMAIL_TO`: 收件人邮箱（多个邮箱用逗号分隔）
+      - `SMTP_SERVER`: SMTP服务器地址
+      - `SMTP_PORT`: SMTP服务器端口
+
+   2. GitHub Actions会自动按计划运行（工作日每晚8点），或者你可以手动触发工作流程
+
+脚本会：
+- 自动安装at命令（如果需要）
 - 检查已有任务，避免重复设置
-- 配置工作日（周一至周五）的执行计划
+- 设置工作日（周一至周五）的执行计划
 - 每天北京时间20:00自动运行程序
-- 自动为未来工作日设置任务
-- 支持每周自动更新下周的任务计划
+- 显示所有已设置的任务
 
 ## 文件结构
 
@@ -88,7 +121,13 @@ chmod +x schedule_tasks.sh
 - `email_sender.py`: 邮件发送模块
 - `logger.py`: 日志记录模块
 - `config.py`: 配置加载模块
-- `schedule_tasks.sh`: 定时任务设置脚本
+- `schedule_tasks.sh`: 定时任务设置脚本（传统方式）
+- `setup_uv.sh`: Linux/macOS下使用uv的安装脚本
+- `setup_uv.bat`: Windows下使用uv的安装脚本
+- `schedule_tasks_uv.sh`: Linux/macOS下基于uv环境的定时任务脚本
+- `schedule_tasks_uv.bat`: Windows下基于uv环境的定时任务脚本
+- `github_action_runner.py`: GitHub Actions运行脚本
+- `.github/workflows/`: GitHub Actions工作流配置文件
 
 ## 注意事项
 
@@ -98,3 +137,4 @@ chmod +x schedule_tasks.sh
 - 所有定时任务使用北京时间
 - 只在工作日（周一至周五）执行
 - 需要安装python-dotenv和google-generativeai包
+

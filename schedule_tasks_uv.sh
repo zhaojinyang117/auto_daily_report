@@ -6,8 +6,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 设置时区为北京时间
 export TZ='Asia/Shanghai'
 
+# 检查虚拟环境是否存在
+if [ ! -d "$SCRIPT_DIR/.venv" ]; then
+    echo "未检测到uv虚拟环境，请先运行 setup_uv.sh 创建环境"
+    exit 1
+fi
+
 # 检查是否有已存在的crontab任务
-EXISTING_CRON=$(crontab -l 2>/dev/null | grep -c "$SCRIPT_DIR/main.py")
+EXISTING_CRON=$(crontab -l 2>/dev/null | grep -c "$SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/main.py")
 
 if [ "$EXISTING_CRON" -eq 0 ]; then
     echo "未检测到已存在的crontab任务，创建新任务..."
@@ -19,9 +25,9 @@ if [ "$EXISTING_CRON" -eq 0 ]; then
     crontab -l 2>/dev/null > "$TEMP_CRON" || echo "" > "$TEMP_CRON"
     
     # 添加注释
-    echo "# auto_daily_report 任务 - 每周一至周五晚上8点执行" >> "$TEMP_CRON"
-    # 添加主任务：每周一至周五晚上8点执行main.py
-    echo "0 20 * * 1-5 cd $SCRIPT_DIR && python3 main.py" >> "$TEMP_CRON"
+    echo "# auto_daily_report 任务 (uv环境) - 每周一至周五晚上8点执行" >> "$TEMP_CRON"
+    # 添加主任务：每周一至周五晚上8点执行main.py，使用uv虚拟环境
+    echo "0 20 * * 1-5 cd $SCRIPT_DIR && $SCRIPT_DIR/.venv/bin/python $SCRIPT_DIR/main.py" >> "$TEMP_CRON"
     
     # 安装新的crontab
     crontab "$TEMP_CRON"

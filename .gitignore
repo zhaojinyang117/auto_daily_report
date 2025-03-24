@@ -1,0 +1,61 @@
+# 环境配置文件
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境
+venv/
+ENV/
+env/
+
+# 日志文件
+*.log
+email_logs.txt
+
+# IDE配置
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# 临时文件
+temp/
+tmp/
+*.tmp
+*.bak
+
+# Edge WebDriver
+*.exe
+*.log
+*.zip
+*.tar.gz
+msedgedriver*
+
+# 其他
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/ 
