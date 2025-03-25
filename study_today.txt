@@ -1,3 +1,3 @@
 <正文>
-1、将服务器部署的脚本迁移到GitHub action上运行
+1、修复了action运行过程中的问题，action调用web drive过程中存在的bug
 </正文>
