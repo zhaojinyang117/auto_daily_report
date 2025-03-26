@@ -35,6 +35,8 @@ jobs:
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         USER_NAME: ${{ secrets.USER_NAME }}
+        EMAIL_SIGNATURE_NAME: ${{ secrets.EMAIL_SIGNATURE_NAME }}
+        EMAIL_SIGNATURE_PHONE: ${{ secrets.EMAIL_SIGNATURE_PHONE }}
         EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         EMAIL_TO: ${{ secrets.EMAIL_TO }}

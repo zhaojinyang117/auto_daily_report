@@ -38,6 +38,8 @@ GEMINI_API_KEY=your_api_key
 
 # 个人信息配置
 USER_NAME=你的姓名
+EMAIL_SIGNATURE_NAME=Your English Name    # 邮件签名显示的英文名
+EMAIL_SIGNATURE_PHONE=+86 123 4567 8901  # 邮件签名显示的电话
 
 # 邮件配置
 EMAIL_FROM=your_email@example.com
@@ -97,6 +99,8 @@ python main.py
    1. 在GitHub仓库设置中添加以下Secrets:
       - `GEMINI_API_KEY`: 你的Gemini API密钥
       - `USER_NAME`: 你的姓名
+      - `EMAIL_SIGNATURE_NAME`: 邮件签名中显示的英文名
+      - `EMAIL_SIGNATURE_PHONE`: 邮件签名中显示的电话号码
       - `EMAIL_FROM`: 发件人邮箱
       - `EMAIL_PASSWORD`: 邮箱密码或应用专用密码
       - `EMAIL_TO`: 收件人邮箱（多个邮箱用逗号分隔）
@@ -131,7 +135,9 @@ python main.py
 
 ## 注意事项
 
-- 确保已正确配置所有环境变量
+- 确保已正确配置所有必要的环境变量
+- `USER_NAME`、`EMAIL_SIGNATURE_NAME`和`EMAIL_SIGNATURE_PHONE`为必填项，没有默认值
+- 日志级别`LOG_LEVEL`有默认值`INFO`，可以不设置
 - 检查SMTP服务器设置是否正确
 - 确保有足够的权限访问日志文件
 - 所有定时任务使用北京时间

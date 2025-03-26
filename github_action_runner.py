@@ -41,6 +41,8 @@ def setup_github_env():
     env_mapping = {
         "GEMINI_API_KEY": "GEMINI_API_KEY",
         "USER_NAME": "USER_NAME",
+        "EMAIL_SIGNATURE_NAME": "EMAIL_SIGNATURE_NAME",
+        "EMAIL_SIGNATURE_PHONE": "EMAIL_SIGNATURE_PHONE",
         "EMAIL_FROM": "EMAIL_FROM",
         "EMAIL_PASSWORD": "EMAIL_PASSWORD",
         "EMAIL_TO": "EMAIL_TO",
