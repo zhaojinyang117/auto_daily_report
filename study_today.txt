@@ -1,39 +1,50 @@
 <正文>
-1、修复了action运行过程中的问题，action调用web drive过程中存在的bug
-2、## ORM查询
 
-### 1. QuerySet
-- **类型**：QuerySet是一个类似列表的数据结构，但里面的元素类型受限，通常为模型类对象或字典。
-- **获取方式**：
-  - `all()`: 返回包括所有记录的QuerySet。
-  - `first()` 和 `last()`: 分别返回符合条件的第一个或最后一个模型类对象。
-  - `filter()`: 过滤出符合条件的记录，相当于SQL中的WHERE。
-  - `exclude()`: 排除符合条件的记录，相当于SQL中的NOT。
-  - `get()`: 必须只有一条记录，返回模型类对象。
-  - `order_by()`: 按字段排序，升序为默认，降序在字段名前加负号。
-  - `count()`: 返回记录数量。
-  - `exists()`: 检查查询结果是否存在。
+## 分组函数与原生查询
+- **分组函数**：使用`annotate()`与`values()`结合来进行分组计算，如计算不同性别学生的平均语文成绩。
+  ```python
+  avg_chinese = Student.objects.values("gender").annotate(avg_chinese=Avg("chinese"))
+  ```
+- **原生SQL查询**：使用`raw()`可以执行直接的SQL语句，实现原生查询。
+  ```python
+  ret = Student.objects.raw("SELECT gender, AVG(chinese) FROM student GROUP BY gender")
+  ```
 
-### 2. 模糊查询
-- **字符串匹配**：
-  - `contains`: 包含指定字符串。
-  - `startswith`: 以指定字符串开头。
-  - `endswith`: 以指定字符串结尾。
-- **空值**：
-  - `isnull=True`: 字段值为NULL。
-- **比较运算**：
-  - `gt`, `lt`, `gte`, `lte`: 大于、小于、大于或等于、小于或等于。
-- **范围查询**：
-  - `range`: 某个范围内的值。
-  - `in`: 在指定列表中的值。
+## 修改记录
+1. **基于模型对象的修改**：通过获取特定的模型对象，修改其属性，然后调用`save()`保存修改。
+   ```python
+   stu = Student.objects.get(name="李四")
+   stu.age = 20
+   stu.save()
+   ```
+2. **使用QuerySet的`update`方法**：一次性更新符合条件的多条记录，例如使用`F`表达式修改语文成绩。
+   ```python
+   Student.objects.filter(gender=0).update(chinese=F("chinese")+10)
+   ```
 
-### 3. 高级查询
-- **F函数**：用于不同字段之间的比较。
-- **Q函数**：实现或逻辑，支持嵌套。
-- **聚合和分组**：
-  - `aggregate()`: 计算聚合值，如平均值。
-  - `annotate()`: 分组计算。
+## 删除记录
+1. **基于模型类对象的删除**：获取模型对象然后调用`delete()`删除。
+   ```python
+   stu = Student.objects.get(id=1)
+   stu.delete()
+   ```
+2. **使用QuerySet的`delete`方法**：批量删除符合条件的记录。
+   ```python
+   Student.objects.filter(gender=0).delete()
+   ```
 
-这些功能组合起来，可以实现复杂的数据检索和分析。
+## 创建关联模型
+- **一对多**：在"多"侧的模型中添加ForeignKey。
+- **多对多**：通过创建第三张关系表来建立关联。
+- **一对一**：在任意一张表中添加OneToOneField。
+  示例中，Student与Course（多对多）、ClassInfo（一对多）、StudentDetail（一对一）之间的关系。
+
+## 关联添加
+虽然文中没有详细介绍如何添加关联，但一般来说，添加关联时需要根据具体的模型关系进行操作。例如，对于多对多关系，可以使用`add()`方法添加关联项：
+
+```python
+# 假设course为某门课程，student为某个学生
+student.courses.add(course)
+```
 
 </正文>
