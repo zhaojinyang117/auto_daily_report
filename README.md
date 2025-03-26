@@ -31,7 +31,13 @@ sudo apt-get install -y at python3-dotenv
 ```
 
 3. 配置环境变量：
-手动创建`.env`文件并填写以下配置：
+   复制`.env.example`文件到`.env`并填写您自己的配置：
+```bash
+cp .env.example .env
+# 然后编辑.env文件填写您的配置
+```
+
+`.env`文件内容示例：
 ```env
 # Gemini API配置
 GEMINI_API_KEY=your_api_key
@@ -53,6 +59,8 @@ SMTP_PORT=465
 # 日志配置
 LOG_LEVEL=INFO
 ```
+
+> **安全提示**：`.env`文件包含敏感信息，不会被提交到Git仓库中。请确保不要意外提交该文件。
 
 ## 使用方法
 
@@ -125,6 +133,8 @@ python main.py
 - `email_sender.py`: 邮件发送模块
 - `logger.py`: 日志记录模块
 - `config.py`: 配置加载模块
+- `.env.example`: 环境变量配置模板（不包含敏感信息）
+- `.env`: 实际环境变量配置（包含敏感信息，不提交到仓库）
 - `schedule_tasks.sh`: 定时任务设置脚本（传统方式）
 - `setup_uv.sh`: Linux/macOS下使用uv的安装脚本
 - `setup_uv.bat`: Windows下使用uv的安装脚本
@@ -143,4 +153,5 @@ python main.py
 - 所有定时任务使用北京时间
 - 只在工作日（周一至周五）执行
 - 需要安装python-dotenv和google-generativeai包
+- 不要将包含敏感信息的`.env`文件提交到公开仓库
 

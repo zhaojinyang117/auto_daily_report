@@ -34,11 +34,11 @@ def send_email(content):
         Best Regards,<br><br>
     </div>
     <div style="font-family: 'Segoe UI';">
-        <span style="color: black; font-weight: bold; font-size: 13pt;">JINYANG ZHAO</span>
+        <span style="color: black; font-weight: bold; font-size: 13pt;">{CONFIG["EMAIL_SIGNATURE_NAME"]}</span>
         <span style="color: blue; font-weight: bold; font-size: 11pt;"> / Intern</span><br>
         <span style="color: black; font-size: 10pt;">Medalsoft International，</span>
         <span style="color: blue; font-weight: bold; font-size: 10pt;">Tianjin</span><br>
-        <span style="color: black; font-size: 10pt;">T: 400 856 0080  |  M: +86 183 1062 9060</span><br>
+        <span style="color: black; font-size: 10pt;">T: 400 856 0080  |  M: {CONFIG["EMAIL_SIGNATURE_PHONE"]}</span><br>
         <span style="color: black; text-decoration: underline; font-size: 10pt;">www.medalsoft.com</span>
         <span style="color: black; font-style: italic; font-size: 10pt;"> Check out our product </span>
         <span style="color: black; font-weight: bold; font-style: italic; text-decoration: underline; font-size: 10pt;">Here</span><br>
@@ -88,6 +88,8 @@ class EmailSender:
             "EMAIL_TO",
             "SMTP_SERVER",
             "SMTP_PORT",
+            "EMAIL_SIGNATURE_NAME",
+            "EMAIL_SIGNATURE_PHONE",
         ]
         for config_name in required_configs:
             if not CONFIG.get(config_name):
@@ -129,11 +131,11 @@ class EmailSender:
                 Best Regards,<br><br>
             </div>
             <div style="font-family: 'Segoe UI';">
-                <span style="color: black; font-weight: bold; font-size: 13pt;">JINYANG ZHAO</span>
+                <span style="color: black; font-weight: bold; font-size: 13pt;">{CONFIG["EMAIL_SIGNATURE_NAME"]}</span>
                 <span style="color: blue; font-weight: bold; font-size: 11pt;"> / Intern</span><br>
                 <span style="color: black; font-size: 10pt;">Medalsoft International，</span>
                 <span style="color: blue; font-weight: bold; font-size: 10pt;">Tianjin</span><br>
-                <span style="color: black; font-size: 10pt;">T: 400 856 0080  |  M: +86 183 1062 9060</span><br>
+                <span style="color: black; font-size: 10pt;">T: 400 856 0080  |  M: {CONFIG["EMAIL_SIGNATURE_PHONE"]}</span><br>
                 <span style="color: black; text-decoration: underline; font-size: 10pt;">www.medalsoft.com</span>
                 <span style="color: black; font-style: italic; font-size: 10pt;"> Check out our product </span>
                 <span style="color: black; font-weight: bold; font-style: italic; text-decoration: underline; font-size: 10pt;">Here</span><br>
