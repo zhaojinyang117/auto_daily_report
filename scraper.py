@@ -1,6 +1,7 @@
 import requests
 import logging
 import os
+import re
 from datetime import datetime, timedelta, timezone
 
 os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "0"  # 禁用gRPC的fork支持
@@ -52,14 +53,14 @@ def get_notion_content() -> str:
 
 def extract_content_for_date(full_content: str, date: str) -> str:
     """
-    从月度计划表中提取特定日期的内容
+    从月度计划表中提取特定日期的内容，如果找不到当前日期，则使用最近的日期内容
 
     Args:
         full_content: 完整的月度计划表内容
         date: 日期字符串，格式为YYYY-MM-DD
 
     Returns:
-        str: 对应日期的内容
+        str: 对应日期的内容或最近日期的内容
     """
     try:
         # 寻找日期标记
@@ -68,17 +69,57 @@ def extract_content_for_date(full_content: str, date: str) -> str:
 
         # 提取对应日期的内容
         start_index = full_content.find(start_tag)
-        if start_index == -1:
-            logging.warning(f"找不到日期 {date} 的内容，将使用默认内容")
-            return "今日学习内容暂未设置"
 
-        start_index += len(start_tag)
-        end_index = full_content.find(end_tag, start_index)
+        # 如果找到当前日期的内容，直接返回
+        if start_index != -1:
+            start_index += len(start_tag)
+            end_index = full_content.find(end_tag, start_index)
 
-        if end_index == -1:
-            end_index = len(full_content)
+            if end_index == -1:
+                end_index = len(full_content)
 
-        return full_content[start_index:end_index].strip()
+            return full_content[start_index:end_index].strip()
+
+        # 如果找不到当前日期的内容，寻找最近的日期
+        logging.warning(f"找不到日期 {date} 的内容，将查找最近的日期内容")
+
+        # 使用正则表达式找出所有日期标签
+        date_pattern = r"<(\d{4}-\d{2}-\d{2})>"
+        all_dates = re.findall(date_pattern, full_content)
+
+        if not all_dates:
+            logging.warning("未找到任何日期标签，将使用默认内容")
+            return "未找到任何日期内容，请检查月度计划表格式"
+
+        # 将日期字符串转换为datetime对象进行比较
+        target_date = datetime.strptime(date, "%Y-%m-%d")
+        closest_date = None
+        min_diff = float("inf")
+
+        for d in all_dates:
+            current_date = datetime.strptime(d, "%Y-%m-%d")
+            diff = abs((target_date - current_date).days)
+
+            if diff < min_diff:
+                min_diff = diff
+                closest_date = d
+
+        logging.info(f"找到最近的日期: {closest_date}，相差{min_diff}天")
+
+        # 使用最近的日期内容
+        closest_start_tag = f"<{closest_date}>"
+        closest_end_tag = f"</{closest_date}>"
+
+        closest_start_index = full_content.find(closest_start_tag)
+        closest_start_index += len(closest_start_tag)
+        closest_end_index = full_content.find(closest_end_tag, closest_start_index)
+
+        if closest_end_index == -1:
+            closest_end_index = len(full_content)
+
+        content = full_content[closest_start_index:closest_end_index].strip()
+        return f"[使用{closest_date}的内容] {content}"
+
     except Exception as e:
         logging.error(f"提取日期内容时出错: {str(e)}")
         return "提取日期内容时出错"
