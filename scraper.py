@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 def get_notion_content() -> str:
     try:
         # 使用GitHub raw文件链接
-        url = "https://raw.githubusercontent.com/zhaojinyang117/auto_daily_report/refs/heads/dev/study_today.txt"
+        url = "https://raw.githubusercontent.com/zhaojinyang117/auto_daily_report/refs/heads/main/study_today.txt"
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
