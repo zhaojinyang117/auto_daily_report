@@ -1,5 +1,6 @@
-<正文>
+<月度计划：2024-04>
 
+<2024-04-01>
 ## 分组函数与原生查询
 - **分组函数**：使用`annotate()`与`values()`结合来进行分组计算，如计算不同性别学生的平均语文成绩。
   ```python
@@ -9,7 +10,9 @@
   ```python
   ret = Student.objects.raw("SELECT gender, AVG(chinese) FROM student GROUP BY gender")
   ```
+</2024-04-01>
 
+<2024-04-02>
 ## 修改记录
 1. **基于模型对象的修改**：通过获取特定的模型对象，修改其属性，然后调用`save()`保存修改。
    ```python
@@ -21,7 +24,9 @@
    ```python
    Student.objects.filter(gender=0).update(chinese=F("chinese")+10)
    ```
+</2024-04-02>
 
+<2024-04-03>
 ## 删除记录
 1. **基于模型类对象的删除**：获取模型对象然后调用`delete()`删除。
    ```python
@@ -32,19 +37,22 @@
    ```python
    Student.objects.filter(gender=0).delete()
    ```
+</2024-04-03>
 
+<2024-04-04>
 ## 创建关联模型
 - **一对多**：在"多"侧的模型中添加ForeignKey。
 - **多对多**：通过创建第三张关系表来建立关联。
 - **一对一**：在任意一张表中添加OneToOneField。
   示例中，Student与Course（多对多）、ClassInfo（一对多）、StudentDetail（一对一）之间的关系。
+</2024-04-04>
 
+<2024-04-05>
 ## 关联添加
-虽然文中没有详细介绍如何添加关联，但一般来说，添加关联时需要根据具体的模型关系进行操作。例如，对于多对多关系，可以使用`add()`方法添加关联项：
+添加关联时需要根据具体的模型关系进行操作。例如，对于多对多关系，可以使用`add()`方法添加关联项：
 
 ```python
 # 假设course为某门课程，student为某个学生
 student.courses.add(course)
 ```
-
-</正文>
+</2024-04-05>
