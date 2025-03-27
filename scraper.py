@@ -1,7 +1,7 @@
 import requests
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "0"  # 禁用gRPC的fork支持
 
@@ -28,8 +28,12 @@ def get_notion_content() -> str:
         if not full_content:
             raise ValueError("获取的内容为空")
 
-        # 获取当前日期
-        today = datetime.now().strftime("%Y-%m-%d")
+        # 获取当前北京时间（UTC+8）
+        utc_now = datetime.now(timezone.utc)
+        beijing_now = utc_now + timedelta(hours=8)
+        today = beijing_now.strftime("%Y-%m-%d")
+
+        logging.info(f"当前北京时间: {beijing_now}, 日期: {today}")
 
         # 提取当天的内容
         content = extract_content_for_date(full_content, today)
