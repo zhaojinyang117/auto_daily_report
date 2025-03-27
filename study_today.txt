@@ -1,58 +1,99 @@
-<月度计划：2024-04>
+<月度计划：2025-03>
 
-<2024-04-01>
-## 分组函数与原生查询
-- **分组函数**：使用`annotate()`与`values()`结合来进行分组计算，如计算不同性别学生的平均语文成绩。
-  ```python
-  avg_chinese = Student.objects.values("gender").annotate(avg_chinese=Avg("chinese"))
-  ```
-- **原生SQL查询**：使用`raw()`可以执行直接的SQL语句，实现原生查询。
-  ```python
-  ret = Student.objects.raw("SELECT gender, AVG(chinese) FROM student GROUP BY gender")
-  ```
-</2024-04-01>
+<2025-03-27>
 
-<2024-04-02>
-## 修改记录
-1. **基于模型对象的修改**：通过获取特定的模型对象，修改其属性，然后调用`save()`保存修改。
-   ```python
-   stu = Student.objects.get(name="李四")
-   stu.age = 20
-   stu.save()
-   ```
-2. **使用QuerySet的`update`方法**：一次性更新符合条件的多条记录，例如使用`F`表达式修改语文成绩。
-   ```python
-   Student.objects.filter(gender=0).update(chinese=F("chinese")+10)
-   ```
-</2024-04-02>
+Django ORM 基础回顾
+模型定义：定义使用Django中的ORM，例如创建学生和班级的模型。
 
-<2024-04-03>
-## 删除记录
-1. **基于模型类对象的删除**：获取模型对象然后调用`delete()`删除。
-   ```python
-   stu = Student.objects.get(id=1)
-   stu.delete()
-   ```
-2. **使用QuerySet的`delete`方法**：批量删除符合条件的记录。
-   ```python
-   Student.objects.filter(gender=0).delete()
-   ```
-</2024-04-03>
+python
+class Student(models.Model):
+    name = models.CharField(max_length=100)
+    age = models.IntegerField()
+    gender = models.IntegerField(choices=(0, "男"), (1, "女"))
 
-<2024-04-04>
-## 创建关联模型
-- **一对多**：在"多"侧的模型中添加ForeignKey。
-- **多对多**：通过创建第三张关系表来建立关联。
-- **一对一**：在任意一张表中添加OneToOneField。
-  示例中，Student与Course（多对多）、ClassInfo（一对多）、StudentDetail（一对一）之间的关系。
-</2024-04-04>
+class ClassInfo(models.Model):
+    name = models.CharField(max_length=200)
+    college = models.CharField(max_length=200)
+创建表记录：使用ORM创建数据库表中的记录。
 
-<2024-04-05>
-## 关联添加
-添加关联时需要根据具体的模型关系进行操作。例如，对于多对多关系，可以使用`add()`方法添加关联项：
+python
+student = Student.objects.create(name="王五", age=20, gender=0)
+</2025-03-27>
 
-```python
-# 假设course为某门课程，student为某个学生
-student.courses.add(course)
-```
-</2024-04-05>
+<2025-03-28>
+
+关联模型的基本操作
+一对多关系：一个班级对应多个学生。
+
+python
+class Student(models.Model):
+    name = models.CharField(max_length=100)
+    age = models.IntegerField()
+    gender = models.IntegerField(choices=(0, "男"), (1, "女"))
+    class_info = models.ForeignKey(ClassInfo, on_delete=models.CASCADE)
+多对多关系：一个学生可以选多门课程，一门课程也可以有多个学生。
+
+python
+class Student(models.Model):
+    courses = models.ManyToManyField(Course)
+一对一关系：一个学生对应一个详细信息。
+
+python
+class StudentDetail(models.Model):
+    student = models.OneToOneField(Student, on_delete=models.CASCADE)
+    id_card = models.CharField(max_length=18)
+</2025-03-28>
+
+<2025-03-29>
+
+关联查询（基于双下划线的关联查询）
+跨关系查询: 通过双下划线（__)进行跨模型的查询。
+
+python
+students = Student.objects.filter(class_info__college="计算机学院")
+students = Student.objects.filter(courses__name="Python编程")
+join查询: 使用select_related或prefetch_related进行预加载。
+
+python
+students = Student.objects.select_related('class_info').all()
+courses = Course.objects.prefetch_related('students').all()
+</2025-03-29>
+
+<2025-03-30>
+
+关联添加与删除
+关联添加:
+
+python
+class_obj = ClassInfo.objects.get(name="计算机科学1班")
+student1.courses.add(course)  # 多对多
+student1.class_info = class_obj  # 一对多
+关联删除:
+
+python
+# CASCADE方式删除
+class_obj = ClassInfo.objects.get(name="计算机科学1班")
+class_obj.delete()
+</2025-03-30>
+
+<2025-03-31>
+
+高级查询与事务管理
+聚合与分组:
+
+python
+from django.db.models import Count, Avg
+courses_stats = Course.objects.annotate(avg_age=Avg('students__age'))
+事务管理:
+
+python
+from django.db import transaction
+
+@transaction.atomic
+def transfer_student(student_id, new_class_id):
+    student = Student.objects.get(id=student_id)
+    new_class = ClassInfo.objects.get(id=new_class_id)
+    student.class_info = new_class
+    student.save()
+</2025-03-31>
+
