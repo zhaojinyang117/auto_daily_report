@@ -1,173 +1,141 @@
-好的，这是一个将上述开发计划翻译成中文的版本：
+**目标：** 创建一个基于 Web 的自动报告工具网页版，支持多用户、独立配置、网页内容管理、可配置的任务调度和历史记录查看，并针对低资源（1C1G）服务器进行优化。
 
-**目标：** 创建一个 Django Web 应用程序，允许多个用户管理、生成并自动发送个性化的每日报告，基于他们的输入，并使用 Gemini 进行处理。
+**核心技术栈：**
 
-**核心技术：**
-
-*   **后端：** Django, Python
-*   **数据库：** PostgreSQL (推荐用于 Django 生产环境) 或 SQLite (用于开发环境)
-*   **后台任务/调度：** Celery，使用 Redis 或 RabbitMQ 作为消息中间件
-*   **前端：** Django 模板, HTML, CSS (可以选择使用 Bootstrap 或 Tailwind CSS 这样的框架来加速样式开发)
-*   **AI 处理：** Google Generative AI SDK (和现在使用的相同)
-*   **邮件：** Django 的邮件后端或 `smtplib` (和现在使用的相同，封装在 Celery 任务中)
-
----
-
-**开发计划：**
-
-**第一阶段：项目设置和用户认证**
-
-1.  **初始化 Django 项目：**
-    *   设置一个虚拟环境 (例如，使用  `uv init && uv venv`)。
-    *   安装 Django: `uv add django`
-    *   创建 Django 项目: `django-admin startproject daily_reporter_project`
-    *   创建核心应用: `cd daily_reporter_project && python manage.py startapp reporter`
-    *   将 `reporter` 添加到 `settings.py` 中的 `INSTALLED_APPS`。
-    *   在 `settings.py` 中配置数据库。
-
-2.  **用户模型和认证：**
-    *   Django 内置的 `User` 模型最初对于 1-5 个用户是合适的。
-    *   实现基本的认证视图 (登录, 登出)。 你可以使用 Django 内置的视图 (`django.contrib.auth.urls`)。
-    *   创建登录模板 (`templates/registration/login.html`)。
-    *   *可选：* 如果需要，实现用户注册，或者计划最初通过管理界面创建用户。
-    *   使用环境变量或 `.env` 文件（使用 `python-dotenv`）安全地存储敏感密钥（例如 Django 的 `SECRET_KEY`）。
-
-3.  **用户设置模型：**
-    *   **目标：** 存储用户特定的配置，而不是全局的 `.env` 文件。
-    *   在 `reporter/models.py` 中，创建 `UserSettings` 模型：
-        *   `user`: `OneToOneField`，连接到 Django 的 `User` 模型。
-        *   `gemini_api_key`: `CharField` (安全存储，如果需要，稍后考虑加密)。
-        *   `email_signature_name`: `CharField`。
-        *   `email_signature_phone`: `CharField`。
-        *   `email_from`: `EmailField`。
-        *   `email_password`: `CharField` (安全存储，例如，使用 `django-fernet-fields` 或类似方法)。
-        *   `email_to`: `TextField` (用于存储逗号分隔的邮件地址)。
-        *   `smtp_server`: `CharField`。
-        *   `smtp_port`: `IntegerField`。
-        *   `schedule_time`: `TimeField` (用于用户首选的发送时间)。
-        *   `timezone`: `CharField` (存储用户的时区，例如 'Asia/Shanghai', 默认为 'UTC+8')。
-        *   `is_active`: `BooleanField` (用于启用/禁用用户的自动发送)。
-    *   运行 `python manage.py makemigrations reporter` 和 `python manage.py migrate`。
-    *   将 `UserSettings` 注册到 Django 管理界面 (`reporter/admin.py`) 以方便管理。
-
-4.  **用户资料/设置视图：**
-    *   创建一个视图 (`reporter/views.py`)，用 `@login_required` 保护。
-    *   创建一个基于 `UserSettings` 模型的 Django 表单 (`reporter/forms.py`)。
-    *   创建一个模板 (`templates/reporter/settings.html`)，让用户查看和更新他们的设置。
-    *   在视图中处理表单提交，以保存设置。 确保在用户首次访问或注册时为用户创建一个 `UserSettings` 实例。
-
-**第二阶段：核心逻辑集成和手动触发**
-
-1.  **重构现有逻辑：**
-    *   将核心逻辑从 `gemini_processor.py`, `email_generator.py` 和 `email_sender.py` 移动到 `reporter` 应用中的可重用函数或类（例如，在 `reporter/services.py` 或单独的文件中）。
-    *   修改这些函数/类，使其接受用户特定的设置（作为参数传递或通过 `user` 对象获取），而不是依赖于全局 `CONFIG` 或 `.env`。
-    *   调整 `EmailGenerator` 以使用 `UserSettings` 中的签名信息。
-    *   调整 `GeminiProcessor` 以使用 `UserSettings` 中的 `gemini_api_key`。
-    *   调整 `EmailSender` 以使用 `UserSettings` 中的所有邮件/SMTP 详细信息。
-
-2.  **内容输入：**
-    *   向 `UserSettings` 模型添加 `monthly_plan_content`: `TextField`。 运行迁移。
-    *   更新 `UserSettings` 表单和模板，包含一个大型文本区域，供用户粘贴/编辑他们的月度计划内容（类似于 `study_today.txt` 中的格式）。
-    *   将内容提取逻辑从 `scraper.py` (`extract_content_for_date`) 重构为 `reporter/utils.py` 中的一个实用函数。 这个函数现在将接受*用户存储的文本*和目标日期作为输入。
-
-3.  **报告历史模型：**
-    *   **目标：** 跟踪已生成/发送的报告。
-    *   在 `reporter/models.py` 中，创建 `ReportHistory` 模型：
-        *   `user`: `ForeignKey`，连接到 `User`。
-        *   `generation_time`: `DateTimeField` (触发生成的时间)。
-        *   `send_time`: `DateTimeField` (null=True, blank=True，实际发送邮件的时间)。
-        *   `status`: `CharField` (例如, 'Pending', 'Processing', 'Success', 'Failed')。
-        *   `subject`: `CharField`。
-        *   `raw_content_used`: `TextField` (提取的特定日期内容)。
-        *   `processed_content`: `TextField` (经过 Gemini 处理的内容)。
-        *   `email_html`: `TextField` (最终生成的邮件正文)。
-        *   `error_message`: `TextField` (null=True, blank=True)。
-    *   运行迁移。 注册到管理界面。
-
-4.  **手动触发视图：**
-    *   创建一个视图 (例如, `generate_today_report`)，用 `@login_required` 保护。
-    *   在用户仪表盘页面 (`templates/reporter/dashboard.html`) 上添加一个按钮，向这个视图发送 POST 请求。
-    *   在这个视图中：
-        *   获取已登录用户的 `UserSettings` 和 `monthly_plan_content`。
-        *   调用重构后的 `extract_content_for_date` 函数，获取今天的日期内容（考虑用户的时区）。
-        *   创建一个 `ReportHistory` 记录，状态为 'Processing'。
-        *   调用重构后的 `GeminiProcessor`。
-        *   调用重构后的 `EmailGenerator`。
-        *   调用重构后的 `EmailSender`。
-        *   使用结果更新 `ReportHistory` 记录（Success/Failed、内容、错误信息、发送时间）。
-        *   使用 Django 的消息框架向用户提供反馈 (例如, "报告已成功生成并发送!" 或 "发送报告失败: [错误]")。
-        *   重定向回仪表盘。
-
-5.  **历史显示视图：**
-    *   创建一个视图 (`reporter/views.py`, 例如 `report_history`)，用 `@login_required` 保护。
-    *   获取已登录用户的 `ReportHistory` 记录，获取最近 7 天的，按 `generation_time` 降序排列。
-    *   创建一个模板 (`templates/reporter/history.html`)，在一个表格中显示历史记录（日期、主题、状态、也许可以链接/弹窗查看内容/错误）。
-
-**第三阶段：使用 Celery 进行调度和后台任务**
-
-1.  **设置 Celery 和消息中间件：**
-    *   安装 Celery 和一个消息中间件: `pip install celery redis` (或者 `librabbitmq` 用于 RabbitMQ)。
-    *   在你的 Django 项目中配置 Celery (创建 `celery.py`，更新 `__init__.py`，在 `settings.py` 中配置消息中间件 URL)。 遵循官方的 Django Celery 集成指南。
-    *   确保 Redis (或 RabbitMQ) 服务器正在运行。
-
-2.  **创建 Celery 任务：**
-    *   在 `reporter/tasks.py` 中，定义一个 Celery 任务 (例如, `generate_and_send_report_task`)。
-    *   这个任务应该接受一个 `user_id` 作为参数。
-    *   在任务内部：
-        *   使用 `user_id` 获取 `User` 和 `UserSettings`。
-        *   执行*整个*报告生成和发送逻辑（提取内容、使用 Gemini 处理、生成邮件、发送邮件），之前在手动触发视图中完成。
-        *   至关重要的是，将核心逻辑封装在 `try...except` 代码块中。
-        *   在各个阶段创建/更新 `ReportHistory` 记录（Pending -> Processing -> Success/Failed），包含相关的详细信息和错误消息。
-
-3.  **实现调度 (Celery Beat)：**
-    *   在你的 `settings.py` 中配置 Celery Beat。
-    *   创建一个周期性的 Celery 任务 (例如, `schedule_daily_reports`)，频繁运行 (例如，每 5-10 分钟)。
-    *   在 `schedule_daily_reports` 内部：
-        *   查询所有活跃的 `UserSettings` (`is_active=True`)。
-        *   对于每个用户：
-            *   获取他们的首选 `schedule_time` 和 `timezone`。
-            *   计算当前时间在用户时区中的时间。
-            *   检查当前时间是否与他们的 `schedule_time` 匹配。
-            *   **重要：** 检查*今天*是否已为该用户成功处理或正在处理报告（查询 `ReportHistory`）。 这可以防止重复发送。
-            *   如果是时间，并且今天没有报告存在/正在处理，则为该 `user_id` 入队 `generate_and_send_report_task`。 使用 `apply_async`，`eta` 略微在将来，或者立即入队。 如果多个任务同时准备就绪，Celery 的工作池将处理排队。
-
-4.  **运行 Worker 和 Beat：**
-    *   你需要运行 Celery worker (`celery -A daily_reporter_project worker -l info`) 和 Celery Beat 调度器 (`celery -A daily_reporter_project beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler`)，同时运行你的 Django 开发服务器。 对于生产环境，这些将由 supervisor 或 systemd 管理。
-
-**第四阶段：UI/UX 优化和错误处理**
-
-1.  **改进前端：**
-    *   使用 CSS 框架 (Bootstrap, Tailwind) 实现现代的外观。 将它应用到登录、设置、仪表盘和历史记录页面。
-    *   使历史记录视图更丰富 (例如，显示内容片段、清晰的错误消息)。
-    *   为任务状态添加视觉提示 (例如，为 Success/Failed 添加标记)。
-
-2.  **增强反馈：**
-    *   当用户手动触发报告时，考虑使用 AJAX，这样页面就不会完全重新加载，从而提供更快的反馈。
-    *   对于计划任务，历史记录页面是主要的反馈机制。 确保它更新得足够快（用户可能需要刷新）。
-
-3.  **强大的错误处理：**
-    *   确保所有外部调用（Gemini、SMTP）在 Celery 任务中都有适当的 `try...except` 代码块。
-    *   在 `ReportHistory` 模型中清楚地记录错误。
-    *   配置 Django 的日志记录以捕获详细的日志以进行调试。
-
-4.  **安全性：**
-    *   查看敏感密钥的存储（`gemini_api_key`、`email_password`）。 考虑使用 `django-environ` 进行设置管理，并可能使用 `django-fernet-fields` 或 Django 的密钥管理来加密数据库中的敏感字段。
-    *   确保所有需要登录的视图都使用 `@login_required` 或 `LoginRequiredMixin`。
-    *   防止常见的 Web 漏洞（CSRF 由 Django 表单处理，如果显示用户生成的内容，请注意 XSS）。
-
-**第五阶段：测试和部署**
-
-1.  **测试：**
-    *   为实用函数（内容提取）、服务（邮件生成逻辑）和 Celery 任务编写单元测试（模拟外部 API/SMTP）。
-    *   为视图和表单编写集成测试。
-2.  **部署：**
-    *   选择一个托管服务提供商（例如，Heroku、PythonAnywhere、AWS、DigitalOcean）。
-    *   配置一个生产就绪的数据库 (PostgreSQL)。
-    *   为 Celery 设置 Redis/RabbitMQ。
-    *   使用进程管理器（例如 `supervisor` 或 `systemd`）来运行 Django（通过 Gunicorn/uWSGI）、Celery workers 和 Celery Beat。
-    *   在服务器上安全地配置环境变量。
-    *   设置静态文件服务（例如，使用 WhiteNoise 或 Nginx）。
+*   **后端：** Django
+*   **包管理器：** uv
+*   **数据库：** SQLite（设置简单，适合单服务器、低并发初期，但扩展性较差）。考虑到 1C1G 的限制和未来潜在需求
+*   **前端：** Django 模板（标准），可选择性地使用少量 JavaScript（如 HTMX 或 Alpine.js）来增强动态性，避免引入重型框架。
+*   **任务队列/调度：**
+    *   **方案 A（更简单，适合 1C1G）：** 使用 `django-cron` 或自定义 Django 管理命令，并通过系统的 `cron` 来运行。这避免了额外的进程（如 Celery worker/broker）。
+*   **Web 服务器/部署：** Gunicorn + Nginx（标准、高效）。
 
 ---
 
-这个计划提供了一个结构化的方法。 你可以根据优先级调整各个阶段。 记住经常提交你的代码，并彻底测试每个步骤。 祝你好运!
+**开发计划（分步进行）**
+
+**阶段一：项目设置与基础用户认证**
+
+1.  √ **初始化 Django 项目：**
+    *   √ 建立虚拟环境（例如使用 `venv` 或 `uv`）。
+    *   √ 安装 Django：`pip install django python-dotenv`
+    *   √ 创建 Django 项目：`django-admin startproject daily_reporter_project .`
+    *   √ 创建核心应用：`python manage.py startapp reporter`
+    *   √ 在 `settings.py` 的 `INSTALLED_APPS` 中添加 `reporter` 和必要的内置应用（如 `django.contrib.admin`, `auth`, `contenttypes`, `sessions`, `messages`, `staticfiles`）。
+2.  √ **配置数据库：**
+    *   √ 选择数据库（QLite）并在 `settings.py` 中进行相应配置。安装必要的驱动程序
+3.  √ **基础模型（Models）：**
+    *   √ 在 `reporter/models.py` 中定义初始模型。如果需要，可以定义一个自定义的用户 Profile 模型，但初期 Django 内置的 `User` 模型可能足够。
+    *   √ 运行初始数据库迁移：`python manage.py makemigrations`, `python manage.py migrate`。
+4.  √ **用户认证：**
+    *   √ 使用 Django 内置的 `django.contrib.auth.views` 实现基本的登录/登出视图。
+    *   √ 为登录 (`registration/login.html`)、登出创建简单的模板，如果后续需要注册功能，也创建相应模板。
+    *   √ 在 `reporter/urls.py` 中设置 URL 模式，并将其包含在主 `daily_reporter_project/urls.py` 中。
+    *   √ 使用 `@login_required` 装饰器或 `LoginRequiredMixin` 限制对主要应用视图的访问。
+5.  √ **管理后台（Admin）：**
+    *   √ 创建超级用户：`python manage.py createsuperuser`。
+    *   √ 在 `reporter/admin.py` 中注册模型（初期只需注册 `User`）。
+    *   √ 访问 `/admin/` 路径来管理用户。
+
+**阶段二：用户特定配置**
+
+1.  **用户设置模型：**
+    *   在 `reporter/models.py` 中创建 `UserSettings` 模型，并与 `User` 模型建立一对一关联（OneToOneField）。
+    *   字段：`gemini_api_key` (安全存储!), `email_signature_name`, `email_signature_phone`, `email_from`, `email_password` (安全存储!), `email_to` (CharField, 处理逗号分隔), `smtp_server`, `smtp_port`, `send_time` (TimeField, 用于调度), `USER_NAME`.env中的用户中文名，用于构建邮件标题的，`is_active` (BooleanField, 用于启用/禁用报告)。
+    *   **安全提示：** 使用 `django-environ` 或类似库管理应用级密钥（如 Django 的 `SECRET_KEY`）。对于用户密钥（API Key, 密码），考虑在数据库中加密存储（例如使用 `django-cryptography` 或 Fernet 库），或者如果复杂度允许，使用专门的密钥管理服务。*初期可以简单处理，但要为后续增强安全性做计划*。
+2.  **视图（Views）与表单（Forms）：**
+    *   为 `UserSettings` 创建一个 Django `ModelForm`。
+    *   创建一个视图 (`UserSettingsUpdateView`)，允许用户编辑自己的设置。确保只有登录用户能编辑自己的设置。可以使用 Django 的通用视图 `UpdateView` 或自定义基于函数的视图。
+    *   为设置表单创建一个模板 (`reporter/user_settings_form.html`)。
+    *   添加设置视图的 URL 模式。
+3.  **管理后台集成：**
+    *   （可选）允许管理员通过 Django Admin 查看/编辑 `UserSettings`。在 `reporter/admin.py` 中注册 `UserSettings` 模型。
+
+**阶段三：基于 Web 的内容管理（替换 Git 获取）**
+
+1.  **内容模型：**
+    *   在 `reporter/models.py` 中创建 `MonthlyPlan` 模型。
+    *   字段：`user` (ForeignKey 关联到 User), `year` (IntegerField), `month` (IntegerField), `content` (TextField)。添加 `unique_together = ('user', 'year', 'month')` 约束，确保每个用户每月只有一个计划。这种方式更接近原始工作流，用户粘贴整个带有 `<YYYY-MM-DD>` 标签结构的文本。
+2.  **视图与表单：**
+    *   为 `MonthlyPlan` 创建一个 `ModelForm`。
+    *   创建视图用于：
+        *   列出用户的所有月度计划。
+        *   创建新的月度计划。
+        *   更新已有的月度计划。
+    *   使用 Django 的通用视图 (`ListView`, `CreateView`, `UpdateView`) 或自定义视图。
+    *   创建模板用于列表展示 (`monthlyplan_list.html`) 和使用 `<textarea>` 编辑内容 (`monthlyplan_form.html`)。
+    *   添加相应的 URL 模式。
+3.  **调整内容提取逻辑：**
+    *   将 `scraper.py` 中的 `extract_content_for_date` 逻辑修改为一个工具函数或 `MonthlyPlan` 模型内的方法。它现在将从数据库模型实例的 `content` 字段获取内容，而不是从 Git/URL 获取。
+
+**阶段四：集成核心逻辑（处理与发送）**
+
+1.  **重构现有模块：**
+    *   将 `gemini_processor.py`, `email_generator.py`, `email_sender.py` 中的核心逻辑移入 `reporter` 应用内的工具函数或类中（例如放在 `reporter/services.py` 或 `reporter/utils.py`）。
+    *   修改这些函数，使其接受用户特定的配置（从 `UserSettings` 模型获取）和内容（从 `MonthlyPlan` 模型获取/提取）作为参数，而不是依赖全局 `CONFIG` 或 `.env` 文件。
+    *   确保在需要时，使用用户特定的设置来实例化 `GeminiProcessor` 和 `EmailSender` 类。
+2.  **创建核心报告发送服务：**
+    *   在 `reporter/services.py` 中创建一个函数 `send_user_report(user: User, specific_date: date = None)`。
+    *   此函数将：
+        *   获取目标日期（用户时区的今天日期，或指定的日期）。
+        *   获取用户的 `UserSettings`。检查 `is_active` 是否为 True。
+        *   获取用户对应目标年月 `MonthlyPlan`。
+        *   调用调整后的 `extract_content_for_date` 逻辑，传入计划内容和目标日期。
+        *   如果找到内容：
+            *   实例化 `GeminiProcessor`（如果 API key 存在）并处理内容。
+            *   使用用户设置和处理后的内容实例化 `EmailGenerator`，获取邮件主题和正文。
+            *   使用用户设置实例化 `EmailSender` 并发送邮件。
+            *   返回成功状态/消息。
+        *   如果未找到内容/设置或发生错误，返回错误状态/消息。
+
+**阶段五：调度与后台任务**
+
+1.  **选择调度方法：** 在方案 A (cron + manage.py) 。
+2.  **创建管理命令：**
+    *   创建 `reporter/management/commands/send_daily_reports.py`。
+    *   该命令将：
+        *   遍历所有拥有活动 `UserSettings` (`is_active=True`) 的 `User` 对象。
+        *   确定当前时间。
+        *   对每个用户，检查其配置的 `send_time` 是否与当前小时匹配（或落在当前执行窗口内）。
+        *   如果匹配，调用阶段四创建的 `send_user_report(user)` 服务函数。
+        *   记录每个用户的执行结果（成功/失败）（日志记录将在阶段六详述）。
+        *   **排队（简化处理）：** 按顺序处理用户。如果一个用户失败，记录日志并继续处理下一个。对于 1C1G 服务器，在一个每 5-15 分钟运行一次的 cron 任务中顺序处理 1-5 个用户应该是可行的。初期避免复杂的队列系统。
+3.  **系统 Cron Job：**
+    *   设置一个系统 `cron` 任务来定期运行该管理命令（例如，每 15 分钟或每小时）。
+    *   示例 crontab 条目：
+        ```bash
+        */15 * * * * /path/to/your/venv/bin/python /path/to/your/project/manage.py send_daily_reports >> /path/to/your/project/logs/cron.log 2>&1
+        ```
+    *   确保 cron 任务运行时设置了正确的环境变量（特别是如果使用 `.env` 文件管理 Django 设置）。
+
+**阶段六：历史记录、日志与反馈**
+
+1.  **历史/日志模型：**
+    *   在 `reporter/models.py` 中创建 `EmailLog` 模型。
+    *   字段：`user` (ForeignKey 关联到 User), `send_timestamp` (DateTimeField, auto_now_add=True), `status` (CharField - 例如 'Success', 'Failed', 'No Content'), `subject` (CharField), `content_preview` (TextField, 可选 - 存储生成的部分邮件正文), `error_message` (TextField, nullable=True)。
+2.  **更新发送服务：**
+    *   修改 `send_user_report` 服务和管理命令，在每次尝试发送后创建 `EmailLog` 条目，记录状态、主题和任何错误信息。
+3.  **历史记录视图与模板：**
+    *   创建一个视图 (`EmailHistoryListView`) 来显示当前登录用户的 `EmailLog` 条目，按时间戳降序排列。
+    *   创建一个模板 (`reporter/email_log_list.html`) 来渲染历史记录表格（时间戳、状态、主题、错误详情）。初期为了性能，可以限制只显示最近一周或一个月的数据。
+4.  **用户反馈：**
+    *   使用 Django 的消息框架 (`django.contrib.messages`) 在用户执行操作（如保存设置）后提供反馈（例如 `messages.success(request, '设置已成功保存！')`）。
+    *   在基础模板中显示这些消息。
+
+**阶段七：完善、优化与部署**
+
+1.  **UI/UX 打磨：** 改进模板，添加导航，确保响应式设计。
+2.  **错误处理：** 在整个应用程序中添加更健壮的错误处理和日志记录。
+3.  **1C1G 优化：**
+    *   **数据库：** 在视图/查询中使用 `select_related` 和 `prefetch_related` 减少数据库查询次数（尤其是在管理命令和历史记录视图中）。为常用查询字段（`user`, `date`, `timestamp`）添加数据库索引。
+    *   **模板：** 保持模板简洁，避免在模板中进行过多计算。
+    *   **静态文件：** 在生产环境中使用 `whitenoise` 来简化静态文件服务，或者使用 Nginx 处理。
+    *   **缓存：** 如果必要，为频繁访问的非关键数据实施缓存（例如 Django 的缓存框架），但初期可以不加。
+4.  **安全加固：** 复查安全实践（CSRF、XSS、SQL 注入 - Django 已处理大部分，但仍需注意），确保用户密钥得到妥善处理，生产环境中设置 `DEBUG=False`。
+5.  **测试：** 为模型、服务、视图和管理命令编写单元测试和集成测试。
+6.  **部署：**
+    *   设置 Gunicorn 来运行 Django 应用。
+    *   设置 Nginx 作为 Gunicorn 前面的反向代理，处理静态文件和 SSL 终止。
+    *   配置生产数据库。
+    *   在服务器上设置 cron 任务。
+    *   安全地管理环境变量（例如，使用系统环境变量或 git 仓库之外的 `.env` 文件）。

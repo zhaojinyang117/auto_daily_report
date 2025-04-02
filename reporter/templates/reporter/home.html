@@ -1,0 +1,42 @@
+{% extends 'reporter/base.html' %}
+
+{% block title %}主页 - 自动日报生成器{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">欢迎使用自动日报生成器</h1>
+    <p class="lead">这是一个基于Web的自动报告工具，支持多用户、独立配置、网页内容管理、可配置的任务调度和历史记录查看。</p>
+    <hr class="my-4">
+    <p>使用此工具可以简化您的日报生成流程，自动处理内容并发送邮件。</p>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">个人设置</h5>
+                <p class="card-text">配置您的个人信息、邮件设置和API密钥。</p>
+                <a href="#" class="btn btn-primary">设置</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">月度计划</h5>
+                <p class="card-text">管理您的月度计划内容。</p>
+                <a href="#" class="btn btn-primary">查看计划</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">历史记录</h5>
+                <p class="card-text">查看邮件发送历史记录。</p>
+                <a href="#" class="btn btn-primary">查看历史</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

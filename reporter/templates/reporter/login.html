@@ -1,0 +1,34 @@
+{% extends 'reporter/base.html' %}
+
+{% block title %}登录 - 自动日报生成器{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">用户登录</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">用户名</label>
+                        {{ form.username }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">密码</label>
+                        {{ form.password }}
+                    </div>
+                    {% if form.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            用户名或密码不正确，请重试。
+                        </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">登录</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
