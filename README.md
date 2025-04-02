@@ -33,10 +33,15 @@
 
 ## 安装和部署
 
-1. 克隆仓库
+1. 克隆仓库（指定使用django分支）
 ```bash
-git clone https://github.com/yourusername/auto_daily_report.git
+git clone -b django https://github.com/yourusername/auto_daily_report.git
 cd auto_daily_report
+```
+
+# 或者如果已经克隆了仓库，可以切换到django分支
+```bash
+git checkout django
 ```
 
 2. 创建并激活虚拟环境
