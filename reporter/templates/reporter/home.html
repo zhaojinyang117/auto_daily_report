@@ -3,43 +3,44 @@
 {% block title %}主页 - 自动日报生成器{% endblock %}
 
 {% block content %}
-<div class="jumbotron">
-    <h1 class="display-4">欢迎使用自动日报生成器</h1>
-    <p class="lead">这是一个基于Web的自动报告工具，支持多用户、独立配置、网页内容管理、可配置的任务调度和历史记录查看。</p>
-    <hr class="my-4">
-    <p>使用此工具可以简化您的日报生成流程，自动处理内容并发送邮件。</p>
-    <div class="mt-4">
-        <a href="{% url 'reporter:extract_content' %}" class="btn btn-success">
-            <i class="bi bi-envelope"></i> 查看并发送今日日报
-        </a>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">个人设置</h5>
-                <p class="card-text">配置您的个人信息、邮件设置和API密钥。</p>
-                <a href="{% url 'reporter:settings' %}" class="btn btn-primary">设置</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">月度计划</h5>
-                <p class="card-text">管理您的月度计划内容。</p>
-                <a href="{% url 'reporter:plan_list' %}" class="btn btn-primary">查看计划</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">历史记录</h5>
-                <p class="card-text">查看邮件发送历史记录。</p>
-                <a href="#" class="btn btn-primary">查看历史</a>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">欢迎使用自动日报工具</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        本工具可以帮助您自动生成和发送学习报告。
+                    </p>
+                    
+                    <div class="d-grid gap-3 mt-4">
+                        <a href="{% url 'reporter:plan_list' %}" class="btn btn-primary">
+                            <i class="bi bi-calendar3"></i> 管理月度计划
+                        </a>
+                        <a href="{% url 'reporter:settings' %}" class="btn btn-info text-white">
+                            <i class="bi bi-gear"></i> 用户设置
+                        </a>
+                        <a href="{% url 'reporter:extract_content' %}" class="btn btn-warning text-dark">
+                            <i class="bi bi-clipboard-data"></i> 查看内容
+                        </a>
+                        <a href="{% url 'reporter:send_report' %}" class="btn btn-success">
+                            <i class="bi bi-envelope"></i> 发送今日报告
+                        </a>
+                        <a href="{% url 'reporter:email_history' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-clock-history"></i> 邮件发送历史
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    <div class="d-flex justify-content-between">
+                        <span>版本: 1.0.0</span>
+                        <a href="{% url 'reporter:logout' %}" class="text-danger">
+                            <i class="bi bi-box-arrow-right"></i> 退出
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

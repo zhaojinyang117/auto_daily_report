@@ -10,7 +10,7 @@ from django.conf import settings
 import google.generativeai as genai
 from django.contrib.auth.models import User
 from typing import Any, Dict, List, Optional, Tuple, Union
-from reporter.models import MonthlyPlan, UserSettings
+from reporter.models import MonthlyPlan, UserSettings, EmailLog
 from reporter.utils import extract_content_for_date
 
 # 配置日志
@@ -267,10 +267,22 @@ def send_user_report(
         try:
             user_settings = UserSettings.objects.get(user=user)
         except UserSettings.DoesNotExist:
+            # 记录日志
+            EmailLog.objects.create(
+                user=user,
+                status=EmailLog.STATUS_FAILED,
+                error_message="用户设置不存在。请先完成设置。",
+            )
             return {"success": False, "message": "用户设置不存在。请先完成设置。"}
 
         # 检查用户设置是否激活（如果不是强制发送）
         if not force_send and not user_settings.is_active:
+            # 记录日志
+            EmailLog.objects.create(
+                user=user,
+                status=EmailLog.STATUS_FAILED,
+                error_message="报告功能未激活。请在设置中激活。",
+            )
             return {"success": False, "message": "报告功能未激活。请在设置中激活。"}
 
         # 检查是否是用户设置的发送日期
@@ -278,9 +290,14 @@ def send_user_report(
         if not force_send and specific_date is None and user_settings.send_days:
             day_of_month = str(target_date.day)
             if day_of_month not in user_settings.send_days:
+                # 记录日志
+                error_msg = f"当前日期({target_date.strftime('%Y-%m-%d')})不在设置的发送日期列表中。"
+                EmailLog.objects.create(
+                    user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg
+                )
                 return {
                     "success": False,
-                    "message": f"当前日期({target_date.strftime('%Y-%m-%d')})不在设置的发送日期列表中。",
+                    "message": error_msg,
                 }
 
         # 获取对应月份的月度计划
@@ -289,15 +306,25 @@ def send_user_report(
                 user=user, year=target_date.year, month=target_date.month
             )
         except MonthlyPlan.DoesNotExist:
+            # 记录日志
+            error_msg = f"未找到 {target_date.year}年{target_date.month}月 的月度计划。"
+            EmailLog.objects.create(
+                user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg
+            )
             return {
                 "success": False,
-                "message": f"未找到 {target_date.year}年{target_date.month}月 的月度计划。",
+                "message": error_msg,
             }
 
         # 提取特定日期的内容
         content = extract_content_for_date(monthly_plan.content, target_date)
         if not content:
-            return {"success": False, "message": f"在 {target_date} 未找到学习内容。"}
+            # 记录日志
+            error_msg = f"在 {target_date} 未找到学习内容。"
+            EmailLog.objects.create(
+                user=user, status=EmailLog.STATUS_NO_CONTENT, error_message=error_msg
+            )
+            return {"success": False, "message": error_msg}
 
         # 检查邮箱配置是否完整
         if (
@@ -307,7 +334,12 @@ def send_user_report(
             or not user_settings.smtp_server
             or not user_settings.smtp_port
         ):
-            return {"success": False, "message": "邮箱配置不完整，请在设置中完成配置。"}
+            # 记录日志
+            error_msg = "邮箱配置不完整，请在设置中完成配置。"
+            EmailLog.objects.create(
+                user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg
+            )
+            return {"success": False, "message": error_msg}
 
         # 使用Gemini处理内容（如有API密钥）
         processed_content = content  # 默认使用原始内容
@@ -325,9 +357,16 @@ def send_user_report(
                     "use_client_proxy"
                 ):
                     # 如果是客户端代理模式，返回API调用信息
+                    # 记录日志
+                    error_msg = "需要客户端代理调用API，请使用前端工具完成此操作"
+                    EmailLog.objects.create(
+                        user=user,
+                        status=EmailLog.STATUS_FAILED,
+                        error_message=error_msg,
+                    )
                     return {
                         "success": False,
-                        "message": "需要客户端代理调用API，请使用前端工具完成此操作",
+                        "message": error_msg,
                         "client_proxy_data": processed_result,
                     }
 
@@ -350,13 +389,43 @@ def send_user_report(
         # 发送邮件
         email_sender = EmailSender(user_settings)
         if email_sender.send_email(subject, html_content):
+            # 记录成功日志
+            # 获取内容预览
+            content_preview = processed_content
+            if len(content_preview) > 500:
+                content_preview = content_preview[:500] + "..."
+
+            EmailLog.objects.create(
+                user=user,
+                status=EmailLog.STATUS_SUCCESS,
+                subject=subject,
+                content_preview=content_preview,
+            )
+
             return {
                 "success": True,
                 "message": f"报告已成功发送至 {user_settings.email_to}",
             }
         else:
-            return {"success": False, "message": "邮件发送失败。请检查邮箱设置。"}
+            # 记录失败日志
+            error_msg = "邮件发送失败。请检查邮箱设置。"
+            EmailLog.objects.create(
+                user=user,
+                status=EmailLog.STATUS_FAILED,
+                subject=subject,
+                error_message=error_msg,
+            )
+            return {"success": False, "message": error_msg}
 
     except Exception as e:
         logger.exception(f"发送报告时发生错误: {e}")
-        return {"success": False, "message": f"发送报告时发生错误: {str(e)}"}
+        # 记录异常日志
+        error_msg = f"发送报告时发生错误: {str(e)}"
+        try:
+            EmailLog.objects.create(
+                user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg
+            )
+        except Exception as log_error:
+            logger.exception(f"记录邮件日志失败: {log_error}")
+
+        return {"success": False, "message": error_msg}

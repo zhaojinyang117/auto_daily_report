@@ -32,3 +32,4 @@ def update_send_days():
 
 if __name__ == "__main__":
     update_send_days()
+ 

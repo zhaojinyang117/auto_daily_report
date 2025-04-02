@@ -1,0 +1,115 @@
+{% extends 'reporter/base.html' %}
+{% load static %}
+
+{% block title %}邮件发送历史{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">邮件发送历史</h5>
+                    <div>
+                        <form class="d-inline-flex" method="get">
+                            <select name="days" class="form-select form-select-sm me-2" onchange="this.form.submit()">
+                                <option value="7" {% if days == 7 %}selected{% endif %}>最近7天</option>
+                                <option value="14" {% if days == 14 %}selected{% endif %}>最近14天</option>
+                                <option value="30" {% if days == 30 %}selected{% endif %}>最近30天</option>
+                                <option value="90" {% if days == 90 %}selected{% endif %}>最近90天</option>
+                            </select>
+                        </form>
+                        <a href="{% url 'reporter:home' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-house-door"></i> 返回首页
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">总数</h6>
+                                    <h3>{{ stats.total }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">成功</h6>
+                                    <h3>{{ stats.success }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">失败</h6>
+                                    <h3>{{ stats.failed }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">无内容</h6>
+                                    <h3>{{ stats.no_content }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if logs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>日期时间</th>
+                                    <th>状态</th>
+                                    <th>主题</th>
+                                    <th>内容预览/错误信息</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.send_timestamp|date:"Y-m-d H:i:s" }}</td>
+                                    <td>
+                                        {% if log.status == 'Success' %}
+                                        <span class="badge bg-success">成功</span>
+                                        {% elif log.status == 'Failed' %}
+                                        <span class="badge bg-danger">失败</span>
+                                        {% elif log.status == 'No Content' %}
+                                        <span class="badge bg-warning text-dark">无内容</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">未知</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ log.subject|default:"-" }}</td>
+                                    <td>
+                                        {% if log.status == 'Success' %}
+                                        <span class="text-muted">{{ log.content_preview|truncatechars:100 }}</span>
+                                        {% else %}
+                                        <span class="text-danger">{{ log.error_message|default:"-" }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info" role="alert">
+                        没有找到邮件发送记录。
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-muted">
+                    显示时间范围: {{ start_date|date:"Y-m-d H:i" }} 至 {{ end_date|date:"Y-m-d H:i" }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

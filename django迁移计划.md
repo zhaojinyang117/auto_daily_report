@@ -105,40 +105,41 @@
     *   √ 在设置界面添加日历选择器，允许用户自定义选择每月的发送日期。
     *   √ 提供快捷按钮（全选、清空、选择工作日）以便于用户快速设置。
     *   √ 在 `send_user_report` 服务中添加验证，确保只在用户选择的日期发送报告。
-4.  **系统 Cron Job：**
-    *   设置一个系统 `cron` 任务来定期运行该管理命令，按照用户设置的发送日期和发送时间设置
-    *   确保 cron 任务运行时设置了正确的环境变量（特别是如果使用 `.env` 文件管理 Django 设置）。
+4.   **系统 Cron Job：**
+    *    设置一个系统 `cron` 任务来定期运行该管理命令，按照用户设置的发送日期和发送时间设置
+    *    确保 cron 任务运行时设置了正确的环境变量（特别是如果使用 `.env` 文件管理 Django 设置）。
 
 **阶段六：历史记录、日志与反馈**
 
-1.  **历史/日志模型：**
-    *   在 `reporter/models.py` 中创建 `EmailLog` 模型。
-    *   字段：`user` (ForeignKey 关联到 User), `send_timestamp` (DateTimeField, auto_now_add=True), `status` (CharField - 例如 'Success', 'Failed', 'No Content'), `subject` (CharField), `content_preview` (TextField, 可选 - 存储生成的部分邮件正文), `error_message` (TextField, nullable=True)。
-2.  **更新发送服务：**
-    *   修改 `send_user_report` 服务和管理命令，在每次尝试发送后创建 `EmailLog` 条目，记录状态、主题和任何错误信息。
-3.  **历史记录视图与模板：**
-    *   创建一个视图 (`EmailHistoryListView`) 来显示当前登录用户的 `EmailLog` 条目，按时间戳降序排列。
-    *   创建一个模板 (`reporter/email_log_list.html`) 来渲染历史记录表格（时间戳、状态、主题、错误详情）。初期为了性能，可以限制只显示最近一周或一个月的数据。
-4.  **用户反馈：**
-    *   使用 Django 的消息框架 (`django.contrib.messages`) 在用户执行操作（如保存设置）后提供反馈（例如 `messages.success(request, '设置已成功保存！')`）。
-    *   在基础模板中显示这些消息。
+1.  √ **历史/日志模型：**
+    *   √ 在 `reporter/models.py` 中创建 `EmailLog` 模型。
+    *   √ 字段：`user` (ForeignKey 关联到 User), `send_timestamp` (DateTimeField, auto_now_add=True), `status` (CharField - 例如 'Success', 'Failed', 'No Content'), `subject` (CharField), `content_preview` 
+    *   √ (TextField, 可选 - 存储生成的部分邮件正文), `error_message` (TextField, nullable=True)。
+2.  √ **更新发送服务：**
+    *   √ 修改 `send_user_report` 服务和管理命令，在每次尝试发送后创建 `EmailLog` 条目，记录状态、主题和任何错误信息。
+3.  √ **历史记录视图与模板：**
+    *   √ 创建一个视图 (`EmailHistoryListView`) 来显示当前登录用户的 `EmailLog` 条目，按时间戳降序排列。
+    *   √ 创建一个模板 (`reporter/email_log_list.html`) 来渲染历史记录表格（时间戳、状态、主题、错误详情）。初期为了性能，可以限制只显示最近一周或一个月的数据。
+4.  √ **用户反馈：**
+    *   √ 使用 Django 的消息框架 (`django.contrib.messages`) 在用户执行操作（如保存设置）后提供反馈（例如 `messages.success(request, '设置已成功保存！')`）。
+    *   √ 在基础模板中显示这些消息。
 
 **阶段七：完善、优化与部署**
 
 1.  **UI/UX 打磨：** 修改前端ui，添加导航，确保响应式设计。
     改为亚克力风格，用户可以在本地自定义背景图片，可以调节透明度。
     首页改为卡片式，以统计图的形式展示这个月发了多少封邮件，总共发了多少封邮件，以及显示已经是使用系统的第多少天（从注册起算）
-2.  **错误处理：** 在整个应用程序中添加更健壮的错误处理和日志记录。
+2.  √ **错误处理：** 在整个应用程序中添加更健壮的错误处理和日志记录。
 3.  **1C1G 优化：**
     *   **数据库：** 在视图/查询中使用 `select_related` 和 `prefetch_related` 减少数据库查询次数（尤其是在管理命令和历史记录视图中）。为常用查询字段（`user`, `date`, `timestamp`）添加数据库索引。
     *   **模板：** 保持模板简洁，避免在模板中进行过多计算。
-    *   **静态文件：** 在生产环境中使用 `whitenoise` 来简化静态文件服务，或者使用 Nginx 处理。
+    *   √ **静态文件：** 在生产环境中使用 `whitenoise` 来简化静态文件服务，或者使用 Nginx 处理。
     *   **缓存：** 如果必要，为频繁访问的非关键数据实施缓存（例如 Django 的缓存框架），但初期可以不加。
-4.  **安全加固：** 复查安全实践（CSRF、XSS、SQL 注入 - Django 已处理大部分，但仍需注意），确保用户密钥得到妥善处理，生产环境中设置 `DEBUG=False`。
+4.  √ **安全加固：** 复查安全实践（CSRF、XSS、SQL 注入 - Django 已处理大部分，但仍需注意），确保用户密钥得到妥善处理，生产环境中设置 `DEBUG=False`。
 5.  **测试：** 为模型、服务、视图和管理命令编写单元测试和集成测试。
-6.  **部署：**
-    *   设置 Gunicorn 来运行 Django 应用。
-    *   设置 Nginx 作为 Gunicorn 前面的反向代理，处理静态文件和 SSL 终止。
-    *   配置生产数据库。
-    *   在服务器上设置 cron 任务。
-    *   安全地管理环境变量（例如，使用系统环境变量或 git 仓库之外的 `.env` 文件）。
+6.  √ **部署：**
+    *   √ 设置 Gunicorn 来运行 Django 应用。
+    *   √ 设置 Nginx 作为 Gunicorn 前面的反向代理，处理静态文件和 SSL 终止。
+    *   √ 配置生产数据库。
+    *   √ 在服务器上设置 cron 任务。
+    *   √ 安全地管理环境变量（例如，使用系统环境变量或 git 仓库之外的 `.env` 文件）。

@@ -6,13 +6,19 @@ from django.views.generic.list import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.http import HttpResponseRedirect, JsonResponse
-from .models import UserSettings, MonthlyPlan
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpRequest
+from .models import UserSettings, MonthlyPlan, EmailLog
 from .forms import UserSettingsForm, MonthlyPlanForm
-from .services import send_user_report, EmailGenerator, EmailSender
-from .utils import extract_content_for_date, get_relative_date_content
+from .services import (
+    send_user_report,
+    EmailGenerator,
+    EmailSender,
+    extract_content_for_date,
+)
+from .utils import get_relative_date_content, get_date_range
 import logging
 import json
+from datetime import datetime, timedelta
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -263,160 +269,179 @@ def extract_content_view(request, plan_id=None, specific_date=None):
 
 
 @login_required
-def send_report(request):
-    """手动发送日报"""
-    try:
-        # 获取用户设置
-        try:
-            user_settings = UserSettings.objects.get(user=request.user)
-            # 检查是否是AJAX请求
-            is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+def send_report(request: HttpRequest) -> HttpResponse:
+    """手动触发发送报告"""
+    logger.info(
+        f"收到发送报告请求，方法: {request.method}, 内容类型: {request.content_type}"
+    )
 
-            # 获取日期信息
+    # 查看POST数据
+    if request.method == "POST":
+        logger.info(f"POST数据: {request.POST}")
+        logger.info(f"POST包含processed_content: {'processed_content' in request.POST}")
+        logger.info(f"请求头: {dict(request.headers)}")
+
+    try:
+        # 检查是否是POST请求且包含processed_content（来自客户端代理处理）
+        if request.method == "POST" and "processed_content" in request.POST:
+            logger.info("收到客户端代理处理后的内容，准备发送邮件")
+
+            # 获取处理后的内容
+            processed_content = request.POST.get("processed_content")
+            logger.info(
+                f"收到处理后内容，长度: {len(processed_content) if processed_content else 0}"
+            )
+
+            # 获取日期参数（如果有的话）
             specific_date = None
             date_str = request.GET.get("date")
             if date_str:
                 try:
-                    import datetime
-
-                    specific_date = datetime.datetime.strptime(
-                        date_str, "%Y-%m-%d"
-                    ).date()
+                    specific_date = datetime.strptime(date_str, "%Y-%m-%d").date()
                     logger.info(f"使用指定日期: {specific_date}")
                 except Exception as e:
                     logger.warning(f"日期格式转换错误: {e}")
 
-            # 处理客户端代理模式下的POST请求(处理后的内容)
-            if request.method == "POST" and is_ajax and user_settings.use_client_proxy:
-                logger.info("收到客户端代理模式的POST请求，包含处理后的内容")
-
-                # 获取处理后的内容
-                processed_content = request.POST.get("processed_content")
-                if not processed_content:
-                    # 可能FormData有问题，尝试从请求体中获取
-                    logger.warning(
-                        "从POST参数中未找到processed_content，尝试从请求体中获取"
-                    )
-                    try:
-                        import json
-
-                        body = json.loads(request.body.decode("utf-8"))
-                        processed_content = body.get("processed_content")
-                    except Exception as e:
-                        logger.error(f"解析请求体出错: {e}")
-
-                if not processed_content:
-                    logger.error("未能获取到处理后的内容")
-                    return JsonResponse(
-                        {"success": False, "message": "未能获取到处理后的内容，请重试"}
-                    )
-
-                # 从月度计划中提取原始内容，但不使用它
-                try:
-                    monthly_plan = MonthlyPlan.objects.get(
-                        user=request.user,
-                        year=specific_date.year,
-                        month=specific_date.month,
-                    )
-
-                    # 提取内容，但我们不使用它，只是为了验证内容存在
-                    content = extract_content_for_date(
-                        monthly_plan.content, specific_date
-                    )
-                    if not content:
-                        logger.warning(
-                            f"在 {specific_date} 未找到学习内容，但仍然继续处理"
-                        )
-                except MonthlyPlan.DoesNotExist:
-                    logger.warning(
-                        f"未找到 {specific_date.year}年{specific_date.month}月 的月度计划，但仍然继续处理"
-                    )
-
-                # 检查邮箱配置是否完整
-                if (
-                    not user_settings.email_from
-                    or not user_settings.email_password
-                    or not user_settings.email_to
-                    or not user_settings.smtp_server
-                    or not user_settings.smtp_port
-                ):
-                    return JsonResponse(
-                        {
-                            "success": False,
-                            "message": "邮箱配置不完整，请在设置中完成配置",
-                        }
-                    )
+            # 获取用户设置
+            try:
+                user_settings = UserSettings.objects.get(user=request.user)
 
                 # 生成邮件内容
-                email_generator = EmailGenerator(user_settings, specific_date)
+                email_generator = EmailGenerator(
+                    user_settings, specific_date or timezone.now().date()
+                )
                 subject = email_generator.get_email_subject()
-
-                # 使用前端处理后的内容生成HTML邮件
                 html_content = email_generator.generate_email_html(processed_content)
 
                 # 发送邮件
                 email_sender = EmailSender(user_settings)
                 if email_sender.send_email(subject, html_content):
-                    logger.info(
-                        f"使用客户端处理内容成功发送邮件至 {user_settings.email_to}"
+                    # 记录成功日志
+                    content_preview = processed_content
+                    if content_preview and len(content_preview) > 500:
+                        content_preview = content_preview[:500] + "..."
+
+                    EmailLog.objects.create(
+                        user=request.user,
+                        status=EmailLog.STATUS_SUCCESS,
+                        subject=subject,
+                        content_preview=content_preview,
                     )
-                    return JsonResponse(
-                        {
-                            "success": True,
-                            "message": f"报告已成功发送至 {user_settings.email_to}",
-                        }
+
+                    logger.info("邮件发送成功")
+
+                    # AJAX请求返回JSON响应
+                    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                        return JsonResponse(
+                            {
+                                "success": True,
+                                "message": f"报告已成功发送至 {user_settings.email_to}",
+                            }
+                        )
+
+                    # 非AJAX请求重定向并显示成功消息
+                    messages.success(
+                        request, f"报告已成功发送至 {user_settings.email_to}"
                     )
+                    return redirect("reporter:home")
                 else:
-                    logger.error("邮件发送失败")
-                    return JsonResponse(
-                        {"success": False, "message": "邮件发送失败。请检查邮箱设置。"}
+                    # 邮件发送失败
+                    error_msg = "邮件发送失败，请检查邮箱设置"
+                    logger.error(error_msg)
+
+                    # 记录失败日志
+                    EmailLog.objects.create(
+                        user=request.user,
+                        status=EmailLog.STATUS_FAILED,
+                        subject=subject,
+                        error_message=error_msg,
                     )
 
-            # 客户端代理模式下的GET请求处理
-            elif user_settings.gemini_api_key and user_settings.use_client_proxy:
-                # 客户端代理模式下，不直接发送邮件，重定向到提取内容页面
-                if not is_ajax:
-                    messages.info(
-                        request, "使用客户端代理模式，请在内容页面手动处理并发送。"
-                    )
-                    return redirect("reporter:extract_content")
-                else:
-                    # 对于AJAX请求，通知前端处理内容
-                    return JsonResponse(
-                        {
-                            "success": False,
-                            "message": "需要客户端处理内容，请点击'使用Gemini处理'按钮",
-                        }
-                    )
-        except UserSettings.DoesNotExist:
-            pass
+                    # AJAX请求返回JSON错误响应
+                    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                        return JsonResponse({"success": False, "message": error_msg})
 
-        # 如果不是客户端代理模式，则正常发送
-        result = send_user_report(request.user, force_send=True)
+                    # 非AJAX请求显示错误消息
+                    messages.error(request, error_msg)
+            except UserSettings.DoesNotExist:
+                # 设置不存在
+                error_msg = "用户设置不存在，请先完成设置"
+                logger.error(error_msg)
 
-        # 处理AJAX请求
-        if is_ajax:
-            return JsonResponse(
-                {"success": result["success"], "message": result["message"]}
-            )
+                # AJAX请求返回JSON错误响应
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return JsonResponse({"success": False, "message": error_msg})
 
-        if result["success"]:
-            messages.success(request, result["message"])
+                # 非AJAX请求显示错误消息
+                messages.error(request, error_msg)
         else:
-            messages.error(request, result["message"])
+            # 非POST请求，直接调用服务函数
+            result = send_user_report(request.user, force_send=True)
+            logger.info(f"调用send_user_report结果: {result}")
+
+            if result["success"]:
+                messages.success(request, result["message"])
+            else:
+                if "client_proxy_data" in result:
+                    # 需要客户端处理的情况，重定向到内容提取页面
+                    return redirect("reporter:extract_content")
+                messages.error(request, result["message"])
     except Exception as e:
-        logger.exception("发送报告时发生错误")
-        messages.error(request, f"发送报告时发生错误: {str(e)}")
+        logger.exception(f"发送报告时发生错误: {e}")
+        error_msg = f"发送报告时出错：{str(e)}"
 
-        # 处理AJAX请求的错误
-        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
-        if is_ajax:
-            return JsonResponse(
-                {"success": False, "message": f"发送报告时发生错误: {str(e)}"}
-            )
+        # AJAX请求返回JSON错误响应
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "message": error_msg})
 
-    # 重定向回来源页面或内容提取页面
-    referer = request.META.get("HTTP_REFERER")
-    return HttpResponseRedirect(
-        referer if referer else reverse_lazy("reporter:extract_content")
-    )
+        # 非AJAX请求显示错误消息
+        messages.error(request, error_msg)
+
+    return redirect("reporter:home")
+
+
+@login_required
+def email_history(request: HttpRequest) -> HttpResponse:
+    """显示邮件发送历史记录
+
+    Args:
+        request: HTTP请求对象
+
+    Returns:
+        HTTP响应对象
+    """
+    # 获取查询参数
+    days = request.GET.get("days", "7")  # 默认显示7天
+    try:
+        days = int(days)
+        if days <= 0:
+            days = 7
+    except ValueError:
+        days = 7
+
+    # 计算日期范围
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=days)
+
+    # 获取历史记录
+    logs = EmailLog.objects.filter(
+        user=request.user, send_timestamp__gte=start_date, send_timestamp__lte=end_date
+    ).order_by("-send_timestamp")
+
+    # 统计数据
+    stats = {
+        "total": logs.count(),
+        "success": logs.filter(status=EmailLog.STATUS_SUCCESS).count(),
+        "failed": logs.filter(status=EmailLog.STATUS_FAILED).count(),
+        "no_content": logs.filter(status=EmailLog.STATUS_NO_CONTENT).count(),
+    }
+
+    context = {
+        "logs": logs,
+        "stats": stats,
+        "days": days,
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+
+    return render(request, "reporter/email_history.html", context)

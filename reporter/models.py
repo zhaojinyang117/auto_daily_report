@@ -110,3 +110,53 @@ class MonthlyPlan(models.Model):
             if plans.exists():
                 return plans.first()
             return None
+
+
+# 邮件日志模型
+class EmailLog(models.Model):
+    """邮件发送日志模型，记录邮件发送历史"""
+
+    # 状态选项
+    STATUS_SUCCESS = "Success"
+    STATUS_FAILED = "Failed"
+    STATUS_NO_CONTENT = "No Content"
+
+    STATUS_CHOICES = [
+        (STATUS_SUCCESS, "成功"),
+        (STATUS_FAILED, "失败"),
+        (STATUS_NO_CONTENT, "无内容"),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="email_logs",
+        verbose_name="用户",
+    )
+    send_timestamp = models.DateTimeField(auto_now_add=True, verbose_name="发送时间")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_SUCCESS,
+        verbose_name="状态",
+    )
+    subject = models.CharField(max_length=200, blank=True, verbose_name="邮件主题")
+    content_preview = models.TextField(blank=True, verbose_name="内容预览")
+    error_message = models.TextField(blank=True, null=True, verbose_name="错误信息")
+
+    class Meta:
+        verbose_name = "邮件日志"
+        verbose_name_plural = "邮件日志"
+        ordering = ["-send_timestamp"]
+
+    def __str__(self):
+        return f"{self.user.username}的邮件 - {self.send_timestamp.strftime('%Y-%m-%d %H:%M')} - {self.get_status_display()}"
+
+    @property
+    def short_content(self):
+        """返回内容的简短预览"""
+        if not self.content_preview:
+            return ""
+        if len(self.content_preview) > 100:
+            return f"{self.content_preview[:100]}..."
+        return self.content_preview
