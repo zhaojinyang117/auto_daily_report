@@ -1,0 +1,95 @@
+{% extends 'reporter/base.html' %}
+
+{% block title %}
+    {% if form.instance.id %}
+        编辑月度计划 - 自动日报生成器
+    {% else %}
+        创建月度计划 - 自动日报生成器
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">
+            {% if form.instance.id %}
+                编辑月度计划
+            {% else %}
+                创建月度计划
+            {% endif %}
+        </h4>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="{{ form.year.id_for_label }}" class="form-label">{{ form.year.label }}</label>
+                    {{ form.year }}
+                    {% if form.year.errors %}
+                        <div class="invalid-feedback d-block">{{ form.year.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.month.id_for_label }}" class="form-label">{{ form.month.label }}</label>
+                    {{ form.month }}
+                    {% if form.month.errors %}
+                        <div class="invalid-feedback d-block">{{ form.month.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="{{ form.content.id_for_label }}" class="form-label">{{ form.content.label }}</label>
+                {{ form.content }}
+                {% if form.content.help_text %}
+                    <div class="form-text">{{ form.content.help_text }}</div>
+                {% endif %}
+                {% if form.content.errors %}
+                    <div class="invalid-feedback d-block">{{ form.content.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{% url 'reporter:plan_list' %}" class="btn btn-outline-secondary">返回列表</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h4 class="card-title">格式说明</h4>
+    </div>
+    <div class="card-body">
+        <p>请使用以下格式输入月度计划内容：</p>
+        <pre><code>&lt;月度计划：YYYY-MM&gt;
+
+&lt;YYYY-MM-DD&gt;
+今日学习内容
+&lt;/YYYY-MM-DD&gt;
+
+&lt;YYYY-MM-DD&gt;
+今日学习内容
+&lt;/YYYY-MM-DD&gt;
+</code></pre>
+        <p>示例：</p>
+        <pre><code>&lt;月度计划：2024-04&gt;
+
+&lt;2024-04-01&gt;
+## 今日学习内容
+- 学习了Python基础知识
+- 完成了项目设计
+&lt;/2024-04-01&gt;
+
+&lt;2024-04-02&gt;
+## 今日学习内容
+- 学习了数据库设计
+- 完成了API开发
+&lt;/2024-04-02&gt;
+</code></pre>
+    </div>
+</div>
+{% endblock %} 

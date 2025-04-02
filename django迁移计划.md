@@ -53,20 +53,20 @@
 
 **阶段三：基于 Web 的内容管理（替换 Git 获取）**
 
-1.  **内容模型：**
-    *   在 `reporter/models.py` 中创建 `MonthlyPlan` 模型。
-    *   字段：`user` (ForeignKey 关联到 User), `year` (IntegerField), `month` (IntegerField), `content` (TextField)。添加 `unique_together = ('user', 'year', 'month')` 约束，确保每个用户每月只有一个计划。这种方式更接近原始工作流，用户粘贴整个带有 `<YYYY-MM-DD>` 标签结构的文本。
-2.  **视图与表单：**
-    *   为 `MonthlyPlan` 创建一个 `ModelForm`。
-    *   创建视图用于：
-        *   列出用户的所有月度计划。
-        *   创建新的月度计划。
-        *   更新已有的月度计划。
-    *   使用 Django 的通用视图 (`ListView`, `CreateView`, `UpdateView`) 或自定义视图。
-    *   创建模板用于列表展示 (`monthlyplan_list.html`) 和使用 `<textarea>` 编辑内容 (`monthlyplan_form.html`)。
-    *   添加相应的 URL 模式。
-3.  **调整内容提取逻辑：**
-    *   将 `scraper.py` 中的 `extract_content_for_date` 逻辑修改为一个工具函数或 `MonthlyPlan` 模型内的方法。它现在将从数据库模型实例的 `content` 字段获取内容，而不是从 Git/URL 获取。
+1.  √ **内容模型：**
+    *   √ 在 `reporter/models.py` 中创建 `MonthlyPlan` 模型。
+    *   √ 字段：`user` (ForeignKey 关联到 User), `year` (IntegerField), `month` (IntegerField), `content` (TextField)。添加 `unique_together = ('user', 'year', 'month')` 约束，确保每个用户每月只有一个计划。这种方式更接近原始工作流，用户粘贴整个带有 `<YYYY-MM-DD>` 标签结构的文本。
+2.  √ **视图与表单：**
+    *   √ 为 `MonthlyPlan` 创建一个 `ModelForm`。
+    *   √ 创建视图用于：
+        *   √ 列出用户的所有月度计划。
+        *   √ 创建新的月度计划。
+        *   √ 更新已有的月度计划。
+    *   √ 使用 Django 的通用视图 (`ListView`, `CreateView`, `UpdateView`) 或自定义视图。
+    *   √ 创建模板用于列表展示 (`monthlyplan_list.html`) 和使用 `<textarea>` 编辑内容 (`monthlyplan_form.html`)。
+    *   √ 添加相应的 URL 模式。
+3.  √ **调整内容提取逻辑：**
+    *   √ 将 `scraper.py` 中的 `extract_content_for_date` 逻辑修改为一个工具函数或 `MonthlyPlan` 模型内的方法。它现在将从数据库模型实例的 `content` 字段获取内容，而不是从 Git/URL 获取。
 
 **阶段四：集成核心逻辑（处理与发送）**
 

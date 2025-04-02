@@ -1,0 +1,56 @@
+{% extends 'reporter/base.html' %}
+
+{% block title %}提取日报内容 - 自动日报生成器{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">提取日报内容</h4>
+    </div>
+    <div class="card-body">
+        <div class="mb-4">
+            <h5>日期信息</h5>
+            <p>
+                目标日期: <strong>{{ date|date:"Y-m-d" }}</strong>
+                {% if plan %}
+                    <br>
+                    来源计划: <strong>{{ plan.year }}年{{ plan.month }}月计划</strong>
+                {% endif %}
+                {% if date_used %}
+                    <br>
+                    使用日期: <strong>{{ date_used }}</strong>
+                    {% if note %}
+                        <span class="text-info">{{ note }}</span>
+                    {% endif %}
+                {% endif %}
+            </p>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-warning">
+                {{ error }}
+            </div>
+        {% elif content %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">日报内容</h5>
+                </div>
+                <div class="card-body">
+                    <div class="content-preview">
+                        {{ content|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="mt-4">
+            <a href="{% url 'reporter:plan_list' %}" class="btn btn-outline-secondary">返回计划列表</a>
+            {% if plan %}
+                <a href="{% url 'reporter:plan_update' plan.id %}" class="btn btn-outline-primary">编辑当前计划</a>
+            {% else %}
+                <a href="{% url 'reporter:plan_create' %}" class="btn btn-outline-primary">创建新计划</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

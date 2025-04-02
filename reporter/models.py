@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 
 # 初期使用Django内置的User模型，不需要自定义User模型
 # 随后会添加更多模型，如UserSettings、MonthlyPlan等
@@ -36,3 +37,40 @@ class UserSettings(models.Model):
     
     def __str__(self):
         return f"{self.user.username}的设置"
+
+# 月度计划模型
+class MonthlyPlan(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='monthly_plans', verbose_name='用户')
+    year = models.IntegerField(verbose_name='年份', validators=[MinValueValidator(2000), MaxValueValidator(2100)])
+    month = models.IntegerField(
+        verbose_name='月份', 
+        validators=[MinValueValidator(1), MaxValueValidator(12)]
+    )
+    content = models.TextField(verbose_name='计划内容')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+    
+    class Meta:
+        verbose_name = '月度计划'
+        verbose_name_plural = '月度计划'
+        unique_together = ('user', 'year', 'month')
+        ordering = ['-year', '-month']
+    
+    def __str__(self):
+        return f"{self.user.username}的{self.year}年{self.month}月计划"
+    
+    @classmethod
+    def get_current_or_latest_plan(cls, user):
+        """获取当前月份的计划，如果不存在则返回最近的计划"""
+        now = timezone.now()
+        current_year, current_month = now.year, now.month
+        
+        # 尝试获取当前月份的计划
+        try:
+            return cls.objects.get(user=user, year=current_year, month=current_month)
+        except cls.DoesNotExist:
+            # 如果不存在，尝试获取最近的计划
+            plans = cls.objects.filter(user=user).order_by('-year', '-month')
+            if plans.exists():
+                return plans.first()
+            return None
