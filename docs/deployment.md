@@ -328,4 +328,224 @@ python manage.py send_daily_reports --all
 
 ```bash
 python manage.py send_daily_reports --user=用户名
+```
+
+## 高级故障排除
+
+在部署过程中，您可能会遇到一些常见问题。以下是一些高级故障排除技巧：
+
+### 1. 非标准部署路径问题
+
+如果您将应用部署在非标准路径（例如/home/user/auto_daily_report而不是/var/www/auto_daily_report），需要相应地调整所有配置文件中的路径。
+
+#### Gunicorn服务文件路径错误
+
+如果遇到类似以下错误：
+
+```
+Failed to locate executable /var/www/auto_daily_report/.venv/bin/gunicorn: No such file or directory
+```
+
+修改systemd服务文件中的所有路径以匹配您的实际部署路径：
+
+```bash
+sudo nano /etc/systemd/system/daily-reporter.service
+```
+
+```ini
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/home/user/auto_daily_report  # 修改为实际路径
+ExecStart=/home/user/auto_daily_report/.venv/bin/gunicorn \  # 修改为实际路径
+    --access-logfile - \
+    --workers 1 \
+    --bind unix:/home/user/auto_daily_report/daily_reporter.sock \  # 修改为实际路径
+    daily_reporter_project.wsgi:application
+```
+
+然后重新加载并重启服务：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart daily-reporter
+```
+
+#### Nginx配置中的路径错误
+
+同样，Nginx配置也需要调整：
+
+```nginx
+location /static/ {
+    alias /home/user/auto_daily_report/staticfiles/;  # 修改为实际路径
+}
+
+location / {
+    include proxy_params;
+    proxy_pass http://unix:/home/user/auto_daily_report/daily_reporter.sock;  # 修改为实际路径
+}
+```
+
+### 2. Django ALLOWED_HOSTS 设置问题
+
+如果遇到DisallowedHost错误：
+
+```
+DisallowedHost at /
+Invalid HTTP_HOST header: 'your-domain.com'. You may need to add 'your-domain.com' to ALLOWED_HOSTS.
+```
+
+需要在settings.py中正确设置ALLOWED_HOSTS：
+
+```bash
+nano /path/to/auto_daily_report/daily_reporter_project/settings.py
+```
+
+```python
+# 注意语法，星号需要放在引号内
+ALLOWED_HOSTS = ['your-domain.com', 'your-ip-address', 'localhost', '*']
+```
+
+不正确的语法示例（会导致错误）：
+```python
+ALLOWED_HOSTS = [*]  # 错误！星号必须放在引号内
+```
+
+修改后重启Gunicorn服务：
+```bash
+sudo systemctl restart daily-reporter
+```
+
+### 3. CSRF验证失败问题
+
+如果使用HTTPS访问网站，但遇到CSRF验证失败：
+
+```
+CSRF验证失败. 请求被中断.
+Reason given for failure: Origin checking failed - https://example.com does not match any trusted origins.
+```
+
+需要在settings.py中添加CSRF_TRUSTED_ORIGINS设置：
+
+```python
+CSRF_TRUSTED_ORIGINS = ['https://your-domain.com', 'http://your-domain.com']
+```
+
+如果还使用IP地址访问：
+```python
+CSRF_TRUSTED_ORIGINS = [
+    'https://your-domain.com', 
+    'http://your-domain.com',
+    'http://your-ip-address',
+    'https://your-ip-address'
+]
+```
+
+### 4. 静态文件问题排查
+
+#### JavaScript效果丢失
+
+如果网站缺少JavaScript效果，可能是静态文件未正确收集或加载：
+
+1. 检查staticfiles目录中是否有所需的JavaScript文件：
+```bash
+ls -la /path/to/auto_daily_report/staticfiles/reporter/js/
+```
+
+2. 确保settings.py中有正确的静态文件配置：
+```python
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+```
+
+3. 如果使用自定义静态文件目录，添加STATICFILES_DIRS设置：
+```python
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+```
+
+4. 重新收集静态文件：
+```bash
+python manage.py collectstatic --clear --noinput
+```
+
+#### 静态文件收集警告
+
+如果在运行collectstatic时看到类似这样的警告：
+```
+Found another file with the destination path 'reporter/js/script.js'. It will be ignored since only the first encountered file is collected.
+```
+
+这表明在多个位置定义了相同名称的静态文件。要解决此问题：
+
+1. 找出重复的静态文件：
+```bash
+find /path/to/auto_daily_report -name "script.js"
+```
+
+2. 确保每个静态文件只在适当的位置定义一次
+3. 明确定义STATICFILES_DIRS以避免歧义
+
+### 5. 用户权限问题
+
+如果遇到权限错误，确保应用目录和文件有正确的所有权和权限：
+
+```bash
+# 设置所有权
+sudo chown -R www-data:www-data /path/to/auto_daily_report
+sudo chown -R www-data:www-data /path/to/auto_daily_report/.venv
+
+# 设置正确的权限
+sudo chmod -R 755 /path/to/auto_daily_report/staticfiles
+sudo chmod -R 755 /path/to/auto_daily_report/.venv/bin
+```
+
+### 6. 使用根用户（临时解决方案）
+
+如果遇到权限问题且无法立即解决，可以临时将服务配置为使用root用户（**不推荐用于生产环境**）：
+
+```ini
+[Service]
+User=root
+Group=root
+# 其他设置不变
+```
+
+然后重启服务：
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart daily-reporter
+```
+
+### 7. Debug模式快速排查
+
+为快速诊断问题，可以临时启用Django的DEBUG模式：
+
+1. 在settings.py中设置：
+```python
+DEBUG = True
+```
+
+2. 重启Gunicorn服务：
+```bash
+sudo systemctl restart daily-reporter
+```
+
+3. 访问网站并查看详细错误信息
+4. **重要**：排查完成后务必将DEBUG设置回False
+
+### 8. 日志检查
+
+详细检查各种日志以获取错误信息：
+
+```bash
+# Django/Gunicorn日志
+sudo journalctl -u daily-reporter -n 100
+
+# Nginx错误日志
+sudo cat /var/log/nginx/error.log
+
+# Django应用日志
+cat /path/to/auto_daily_report/debug.log
 ``` 
