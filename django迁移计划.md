@@ -106,11 +106,7 @@
     *   √ 提供快捷按钮（全选、清空、选择工作日）以便于用户快速设置。
     *   √ 在 `send_user_report` 服务中添加验证，确保只在用户选择的日期发送报告。
 4.  **系统 Cron Job：**
-    *   设置一个系统 `cron` 任务来定期运行该管理命令（例如，每 15 分钟或每小时）。
-    *   示例 crontab 条目：
-        ```bash
-        */15 * * * * /path/to/your/venv/bin/python /path/to/your/project/manage.py send_daily_reports >> /path/to/your/project/logs/cron.log 2>&1
-        ```
+    *   设置一个系统 `cron` 任务来定期运行该管理命令，按照用户设置的发送日期和发送时间设置
     *   确保 cron 任务运行时设置了正确的环境变量（特别是如果使用 `.env` 文件管理 Django 设置）。
 
 **阶段六：历史记录、日志与反馈**
