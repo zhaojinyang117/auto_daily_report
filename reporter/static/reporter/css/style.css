@@ -1,0 +1,287 @@
+/* 亚克力风格CSS - 实现Windows Fluent Design风格 */
+
+:root {
+    --acrylic-bg-opacity: 0.8;
+    --acrylic-blur: 12px;
+    --primary-color: #0078d7;
+    --secondary-color: #00b7c3;
+    --dark-color: #333;
+    --light-color: #f8f9fa;
+    --success-color: #107c10;
+    --warning-color: #ff8c00;
+    --danger-color: #d13438;
+    --info-color: #0099bc;
+}
+
+body {
+    background: linear-gradient(135deg, #0078d7, #00b7c3);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    color: var(--dark-color);
+    padding-bottom: 60px;
+}
+
+/* 自定义背景图片 */
+body.custom-bg {
+    background-image: var(--custom-bg-image);
+    background-size: cover;
+}
+
+/* 亚克力效果组件 */
+.acrylic {
+    background-color: rgba(255, 255, 255, var(--acrylic-bg-opacity));
+    backdrop-filter: blur(var(--acrylic-blur));
+    -webkit-backdrop-filter: blur(var(--acrylic-blur));
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.acrylic-dark {
+    background-color: rgba(30, 30, 30, var(--acrylic-bg-opacity));
+    color: white;
+    backdrop-filter: blur(var(--acrylic-blur));
+    -webkit-backdrop-filter: blur(var(--acrylic-blur));
+}
+
+/* 导航栏 */
+.navbar.acrylic {
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* 卡片样式 */
+.card.acrylic {
+    border: none;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.card.acrylic:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.card.acrylic .card-header {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    font-weight: 500;
+}
+
+.card.acrylic-dark .card-header {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card.acrylic .card-footer {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 按钮样式 */
+.btn-acrylic {
+    background-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(var(--acrylic-blur));
+    -webkit-backdrop-filter: blur(var(--acrylic-blur));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.btn-acrylic:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.btn-acrylic-primary {
+    background-color: rgba(0, 120, 215, 0.8);
+    color: white;
+}
+
+.btn-acrylic-primary:hover {
+    background-color: rgba(0, 120, 215, 0.9);
+}
+
+/* 统计卡片 */
+.stat-card {
+    text-align: center;
+    padding: 1.5rem;
+}
+
+.stat-card .stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .stat-label {
+    font-size: 1rem;
+    color: #777;
+}
+
+/* 透明度调节器 */
+.opacity-control {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .card.acrylic {
+        margin-bottom: 1rem;
+    }
+
+    .stat-card .stat-icon {
+        font-size: 2rem;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.5rem;
+    }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* 背景设置按钮 */
+.bg-settings-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.bg-settings-toggle:hover {
+    transform: scale(1.1);
+    background-color: rgba(255, 255, 255, 1);
+}
+
+.bg-settings-toggle[aria-expanded="true"] {
+    transform: rotate(180deg);
+}
+
+/* 背景设置面板 */
+.bg-settings {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 280px;
+    z-index: 999;
+}
+
+.bg-settings-content {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(var(--acrylic-blur));
+    -webkit-backdrop-filter: blur(var(--acrylic-blur));
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 折叠动画 */
+.collapse {
+    transition: height 0.35s ease;
+}
+
+.collapsing {
+    height: 0;
+    overflow: hidden;
+    transition: height 0.35s ease;
+}
+
+/* 表格亚克力风格 */
+.card.acrylic .table {
+    background-color: transparent !important;
+    color: var(--dark-color);
+    margin-bottom: 0;
+}
+
+.card.acrylic .table thead th {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--dark-color);
+    font-weight: 500;
+}
+
+.card.acrylic .table tbody tr {
+    background-color: transparent !important;
+    transition: background-color 0.2s ease;
+}
+
+.card.acrylic .table tbody tr:nth-of-type(odd),
+.card.acrylic .table tbody tr:nth-of-type(even) {
+    background-color: transparent !important;
+}
+
+.card.acrylic .table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.card.acrylic .table td,
+.card.acrylic .table th {
+    border-color: rgba(255, 255, 255, 0.2);
+    background-color: transparent !important;
+}
+
+/* 覆盖Bootstrap表格条纹样式 */
+.table-striped>tbody>tr:nth-of-type(odd),
+.table-striped>tbody>tr:nth-of-type(even) {
+    background-color: transparent !important;
+}

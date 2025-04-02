@@ -27,9 +27,72 @@ logger = logging.getLogger(__name__)
 
 
 @login_required
-def home(request):
-    """主页视图，需要登录才能访问"""
-    return render(request, "reporter/home.html")
+def home(request: HttpRequest) -> HttpResponse:
+    """主页视图，需要登录才能访问
+
+    Args:
+        request: HTTP请求对象
+
+    Returns:
+        HTTP响应对象
+    """
+
+    # 获取当前月份的开始和结束日期
+    today = timezone.now().date()
+    first_day_of_month = today.replace(day=1)
+
+    if today.month == 12:
+        next_month = 1
+        next_year = today.year + 1
+    else:
+        next_month = today.month + 1
+        next_year = today.year
+
+    last_day_of_month = datetime(next_year, next_month, 1).date() - timedelta(days=1)
+
+    # 获取本月邮件统计
+    monthly_emails = EmailLog.objects.filter(
+        user=request.user,
+        send_timestamp__date__gte=first_day_of_month,
+        send_timestamp__date__lte=last_day_of_month,
+    )
+    monthly_emails_count = monthly_emails.count()
+
+    # 获取总邮件统计
+    total_emails_count = EmailLog.objects.filter(user=request.user).count()
+
+    # 计算成功率
+    success_count = EmailLog.objects.filter(
+        user=request.user, status=EmailLog.STATUS_SUCCESS
+    ).count()
+
+    success_rate = 0
+    if total_emails_count > 0:
+        success_rate = int((success_count / total_emails_count) * 100)
+
+    # 生成月度图表数据
+    monthly_chart_data = []
+
+    # 获取本月每天的邮件数量
+    for day in range(1, today.day + 1):
+        day_date = first_day_of_month.replace(day=day)
+        count = EmailLog.objects.filter(
+            user=request.user, send_timestamp__date=day_date
+        ).count()
+
+        monthly_chart_data.append({"day": day_date.strftime("%d"), "count": count})
+
+    # 将图表数据转换为JSON
+    monthly_chart_data_json = json.dumps(monthly_chart_data)
+
+    context = {
+        "monthly_emails_count": monthly_emails_count,
+        "total_emails_count": total_emails_count,
+        "success_rate": success_rate,
+        "monthly_chart_data": monthly_chart_data_json,
+    }
+
+    return render(request, "reporter/home.html", context)
 
 
 @login_required

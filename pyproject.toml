@@ -1,7 +1,7 @@
 [project]
 name = "auto-daily-report"
 version = "0.1.0"
-description = "Add your description here"
+description = "一个基于Web的自动日报生成和发送工具"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -9,4 +9,18 @@ dependencies = [
     "django-widget-tweaks>=1.5.0",
     "google-generativeai>=0.8.4",
     "python-dotenv>=1.1.0",
+    "whitenoise>=6.5.0",
+    "gunicorn>=23.0.0",
+    "cryptography>=44.0.2",
+    "django-cron>=0.6.0",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["reporter", "daily_reporter_project"]

@@ -7,21 +7,21 @@
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-12">
-            <div class="card">
+            <div class="card acrylic">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5>日报内容提取</h5>
                     <div>
                         {% if content %}
                             {% if client_proxy_data %}
-                            <button id="process-with-gemini" class="btn btn-primary btn-sm me-2">
-                                <i class="fas fa-magic"></i> 使用Gemini处理
+                            <button id="process-with-gemini" class="btn btn-acrylic btn-acrylic-primary btn-sm me-2">
+                                <i class="bi bi-stars"></i> 使用Gemini处理
                             </button>
-                            <button id="send-email" class="btn btn-success btn-sm me-2" style="display: none;">
-                                <i class="fas fa-envelope"></i> 发送邮件
+                            <button id="send-email" class="btn btn-acrylic btn-sm me-2" style="color: var(--success-color); display: none;">
+                                <i class="bi bi-envelope"></i> 发送邮件
                             </button>
                             {% else %}
-                            <a href="{% url 'reporter:send_report' %}" class="btn btn-success btn-sm">
-                                <i class="fas fa-envelope"></i> 发送报告
+                            <a href="{% url 'reporter:send_report' %}" class="btn btn-acrylic btn-sm" style="color: var(--success-color);">
+                                <i class="bi bi-envelope"></i> 发送报告
                             </a>
                             {% endif %}
                         {% endif %}
@@ -35,8 +35,8 @@
                                 <div class="input-group">
                                     <input type="date" name="date" class="form-control" 
                                            value="{{ date|date:'Y-m-d' }}" required>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-search"></i> 提取内容
+                                    <button type="submit" class="btn btn-acrylic btn-acrylic-primary">
+                                        <i class="bi bi-search"></i> 提取内容
                                     </button>
                                 </div>
                             </div>
@@ -55,20 +55,22 @@
                     <script type="application/json" id="client-proxy-data">
                         {{ client_proxy_data|safe }}
                     </script>
-                    <div class="alert alert-info mb-3">
-                        <strong>客户端代理模式:</strong> 将使用您的浏览器网络环境访问Gemini API。
-                        点击上方"使用Gemini处理"按钮开始处理内容。
+                    <div class="card acrylic mb-3" style="border-left: 4px solid var(--info-color);">
+                        <div class="card-body py-2">
+                            <strong>客户端代理模式:</strong> 将使用您的浏览器网络环境访问Gemini API。
+                            点击上方"使用Gemini处理"按钮开始处理内容。
+                        </div>
                     </div>
                     {% endif %}
 
                     <!-- 内容显示区域 -->
                     {% if content %}
-                        <div class="card">
-                            <div class="card-header bg-light">
+                        <div class="card acrylic">
+                            <div class="card-header">
                                 <div class="d-flex justify-content-between">
                                     <span>{{ date|date:'Y-m-d' }} 的日报内容</span>
                                     {% if note %}
-                                    <span class="text-warning">{{ note }}</span>
+                                    <span style="color: var(--warning-color);">{{ note }}</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -79,22 +81,24 @@
                             </div>
                         </div>
                     {% else %}
-                        <div class="alert alert-warning">
-                            {% if error %}
-                                <p>{{ error }}</p>
-                            {% else %}
-                                <p>请选择日期提取内容。</p>
-                            {% endif %}
+                        <div class="card acrylic mb-3" style="border-left: 4px solid var(--warning-color);">
+                            <div class="card-body py-2">
+                                {% if error %}
+                                    <p class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</p>
+                                {% else %}
+                                    <p class="mb-0"><i class="bi bi-info-circle me-2"></i>请选择日期提取内容。</p>
+                                {% endif %}
+                            </div>
                         </div>
                     {% endif %}
                 </div>
                 <div class="card-footer">
                     <div class="d-flex justify-content-between">
-                        <a href="{% url 'reporter:plan_list' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-list"></i> 月度计划列表
+                        <a href="{% url 'reporter:plan_list' %}" class="btn btn-acrylic">
+                            <i class="bi bi-list-ul"></i> 月度计划列表
                         </a>
-                        <a href="{% url 'reporter:home' %}" class="btn btn-outline-primary">
-                            <i class="fas fa-home"></i> 返回首页
+                        <a href="{% url 'reporter:home' %}" class="btn btn-acrylic">
+                            <i class="bi bi-house"></i> 返回首页
                         </a>
                     </div>
                 </div>

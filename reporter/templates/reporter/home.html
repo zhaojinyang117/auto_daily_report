@@ -1,43 +1,111 @@
 {% extends 'reporter/base.html' %}
 
-{% block title %}主页 - 自动日报生成器{% endblock %}
+{% block title %}首页 - 自动日报生成器{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container">
+    <!-- 欢迎信息 -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card acrylic">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="bi bi-stars"></i> 欢迎回来，{{ user.username }}
+                    </h2>
+                    <p class="card-text">
+                        这是您使用自动日报工具的第 <span id="days-since-registration" class="badge bg-primary" data-register-date="{{ user.date_joined|date:'Y-m-d' }}">0</span> 天
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <!-- 本月邮件数 -->
+        <div class="col-md-4">
+            <div class="card acrylic">
+                <div class="card-body stat-card">
+                    <div class="stat-icon">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="stat-value" id="monthly-emails-count" data-count="{{ monthly_emails_count }}">
+                        {{ monthly_emails_count }}
+                    </div>
+                    <div class="stat-label">本月邮件</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 总邮件数 -->
+        <div class="col-md-4">
+            <div class="card acrylic">
+                <div class="card-body stat-card">
+                    <div class="stat-icon">
+                        <i class="bi bi-envelope-check"></i>
+                    </div>
+                    <div class="stat-value" id="total-emails-count" data-count="{{ total_emails_count }}">
+                        {{ total_emails_count }}
+                    </div>
+                    <div class="stat-label">总邮件数</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 成功率 -->
+        <div class="col-md-4">
+            <div class="card acrylic">
+                <div class="card-body stat-card">
+                    <div class="stat-icon">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <div class="stat-value">
+                        {{ success_rate }}%
+                    </div>
+                    <div class="stat-label">发送成功率</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图表和快捷操作 -->
     <div class="row">
-        <div class="col-md-6 offset-md-3">
-            <div class="card">
+        <!-- 邮件发送图表 -->
+        <div class="col-md-8 mb-4">
+            <div class="card acrylic">
                 <div class="card-header">
-                    <h5 class="card-title">欢迎使用自动日报工具</h5>
+                    <h5 class="card-title"><i class="bi bi-bar-chart-line"></i> 本月邮件发送情况</h5>
                 </div>
                 <div class="card-body">
-                    <p class="card-text">
-                        本工具可以帮助您自动生成和发送学习报告。
-                    </p>
-                    
-                    <div class="d-grid gap-3 mt-4">
-                        <a href="{% url 'reporter:plan_list' %}" class="btn btn-primary">
-                            <i class="bi bi-calendar3"></i> 管理月度计划
-                        </a>
-                        <a href="{% url 'reporter:settings' %}" class="btn btn-info text-white">
-                            <i class="bi bi-gear"></i> 用户设置
-                        </a>
-                        <a href="{% url 'reporter:extract_content' %}" class="btn btn-warning text-dark">
-                            <i class="bi bi-clipboard-data"></i> 查看内容
-                        </a>
-                        <a href="{% url 'reporter:send_report' %}" class="btn btn-success">
-                            <i class="bi bi-envelope"></i> 发送今日报告
-                        </a>
-                        <a href="{% url 'reporter:email_history' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-clock-history"></i> 邮件发送历史
-                        </a>
+                    <div style="height: 250px;">
+                        <canvas id="emailMonthlyChart" data-chart-data="{{ monthly_chart_data }}"></canvas>
                     </div>
                 </div>
-                <div class="card-footer text-muted">
-                    <div class="d-flex justify-content-between">
-                        <span>版本: 1.0.0</span>
-                        <a href="{% url 'reporter:logout' %}" class="text-danger">
-                            <i class="bi bi-box-arrow-right"></i> 退出
+            </div>
+        </div>
+        
+        <!-- 快捷操作 -->
+        <div class="col-md-4">
+            <div class="card acrylic">
+                <div class="card-header">
+                    <h5 class="card-title"><i class="bi bi-lightning"></i> 快捷操作</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'reporter:plan_list' %}" class="btn btn-acrylic btn-acrylic-primary">
+                            <i class="bi bi-calendar3"></i> 管理月度计划
+                        </a>
+                        <a href="{% url 'reporter:extract_content' %}" class="btn btn-acrylic">
+                            <i class="bi bi-clipboard-data"></i> 查看今日内容
+                        </a>
+                        <a href="{% url 'reporter:send_report' %}" class="btn btn-acrylic" style="background-color: rgba(25, 135, 84, 0.8); color: white;">
+                            <i class="bi bi-envelope"></i> 发送今日报告
+                        </a>
+                        <a href="{% url 'reporter:email_history' %}" class="btn btn-acrylic">
+                            <i class="bi bi-clock-history"></i> 查看历史记录
+                        </a>
+                        <a href="{% url 'reporter:settings' %}" class="btn btn-acrylic">
+                            <i class="bi bi-gear"></i> 用户设置
                         </a>
                     </div>
                 </div>

@@ -7,7 +7,7 @@
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-md-12">
-            <div class="card">
+            <div class="card acrylic">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">邮件发送历史</h5>
                     <div>
@@ -19,7 +19,7 @@
                                 <option value="90" {% if days == 90 %}selected{% endif %}>最近90天</option>
                             </select>
                         </form>
-                        <a href="{% url 'reporter:home' %}" class="btn btn-sm btn-outline-secondary">
+                        <a href="{% url 'reporter:home' %}" class="btn btn-sm btn-acrylic">
                             <i class="bi bi-house-door"></i> 返回首页
                         </a>
                     </div>
@@ -27,7 +27,7 @@
                 <div class="card-body">
                     <div class="row mb-4">
                         <div class="col-md-3">
-                            <div class="card bg-light">
+                            <div class="card acrylic">
                                 <div class="card-body text-center">
                                     <h6 class="card-title">总数</h6>
                                     <h3>{{ stats.total }}</h3>
@@ -35,25 +35,25 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card bg-success text-white">
+                            <div class="card acrylic" style="border-left: 4px solid var(--success-color);">
                                 <div class="card-body text-center">
-                                    <h6 class="card-title">成功</h6>
+                                    <h6 class="card-title" style="color: var(--success-color);">成功</h6>
                                     <h3>{{ stats.success }}</h3>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card bg-danger text-white">
+                            <div class="card acrylic" style="border-left: 4px solid var(--danger-color);">
                                 <div class="card-body text-center">
-                                    <h6 class="card-title">失败</h6>
+                                    <h6 class="card-title" style="color: var(--danger-color);">失败</h6>
                                     <h3>{{ stats.failed }}</h3>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card bg-warning">
+                            <div class="card acrylic" style="border-left: 4px solid var(--warning-color);">
                                 <div class="card-body text-center">
-                                    <h6 class="card-title">无内容</h6>
+                                    <h6 class="card-title" style="color: var(--warning-color);">无内容</h6>
                                     <h3>{{ stats.no_content }}</h3>
                                 </div>
                             </div>
@@ -61,47 +61,53 @@
                     </div>
 
                     {% if logs %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>日期时间</th>
-                                    <th>状态</th>
-                                    <th>主题</th>
-                                    <th>内容预览/错误信息</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for log in logs %}
-                                <tr>
-                                    <td>{{ log.send_timestamp|date:"Y-m-d H:i:s" }}</td>
-                                    <td>
-                                        {% if log.status == 'Success' %}
-                                        <span class="badge bg-success">成功</span>
-                                        {% elif log.status == 'Failed' %}
-                                        <span class="badge bg-danger">失败</span>
-                                        {% elif log.status == 'No Content' %}
-                                        <span class="badge bg-warning text-dark">无内容</span>
-                                        {% else %}
-                                        <span class="badge bg-secondary">未知</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ log.subject|default:"-" }}</td>
-                                    <td>
-                                        {% if log.status == 'Success' %}
-                                        <span class="text-muted">{{ log.content_preview|truncatechars:100 }}</span>
-                                        {% else %}
-                                        <span class="text-danger">{{ log.error_message|default:"-" }}</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div class="card acrylic">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>日期时间</th>
+                                            <th>状态</th>
+                                            <th>主题</th>
+                                            <th>内容预览/错误信息</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for log in logs %}
+                                        <tr>
+                                            <td>{{ log.send_timestamp|date:"Y-m-d H:i:s" }}</td>
+                                            <td>
+                                                {% if log.status == 'Success' %}
+                                                <span class="badge rounded-pill" style="background-color: var(--success-color);">成功</span>
+                                                {% elif log.status == 'Failed' %}
+                                                <span class="badge rounded-pill" style="background-color: var(--danger-color);">失败</span>
+                                                {% elif log.status == 'No Content' %}
+                                                <span class="badge rounded-pill" style="background-color: var(--warning-color);">无内容</span>
+                                                {% else %}
+                                                <span class="badge rounded-pill" style="background-color: var(--secondary-color);">未知</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ log.subject|default:"-" }}</td>
+                                            <td>
+                                                {% if log.status == 'Success' %}
+                                                <span class="text-muted">{{ log.content_preview|truncatechars:100 }}</span>
+                                                {% else %}
+                                                <span style="color: var(--danger-color);">{{ log.error_message|default:"-" }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                     {% else %}
-                    <div class="alert alert-info" role="alert">
-                        没有找到邮件发送记录。
+                    <div class="card acrylic" style="border-left: 4px solid var(--info-color);">
+                        <div class="card-body py-2">
+                            <p class="mb-0"><i class="bi bi-info-circle me-2"></i>没有找到邮件发送记录。</p>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
