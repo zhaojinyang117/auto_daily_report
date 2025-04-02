@@ -39,17 +39,17 @@
 
 **阶段二：用户特定配置**
 
-1.  **用户设置模型：**
-    *   在 `reporter/models.py` 中创建 `UserSettings` 模型，并与 `User` 模型建立一对一关联（OneToOneField）。
-    *   字段：`gemini_api_key` (安全存储!), `email_signature_name`, `email_signature_phone`, `email_from`, `email_password` (安全存储!), `email_to` (CharField, 处理逗号分隔), `smtp_server`, `smtp_port`, `send_time` (TimeField, 用于调度), `USER_NAME`.env中的用户中文名，用于构建邮件标题的，`is_active` (BooleanField, 用于启用/禁用报告)。
-    *   **安全提示：** 使用 `django-environ` 或类似库管理应用级密钥（如 Django 的 `SECRET_KEY`）。对于用户密钥（API Key, 密码），考虑在数据库中加密存储（例如使用 `django-cryptography` 或 Fernet 库），或者如果复杂度允许，使用专门的密钥管理服务。*初期可以简单处理，但要为后续增强安全性做计划*。
-2.  **视图（Views）与表单（Forms）：**
-    *   为 `UserSettings` 创建一个 Django `ModelForm`。
-    *   创建一个视图 (`UserSettingsUpdateView`)，允许用户编辑自己的设置。确保只有登录用户能编辑自己的设置。可以使用 Django 的通用视图 `UpdateView` 或自定义基于函数的视图。
-    *   为设置表单创建一个模板 (`reporter/user_settings_form.html`)。
-    *   添加设置视图的 URL 模式。
-3.  **管理后台集成：**
-    *   （可选）允许管理员通过 Django Admin 查看/编辑 `UserSettings`。在 `reporter/admin.py` 中注册 `UserSettings` 模型。
+1.  √ **用户设置模型：**
+    *   √ 在 `reporter/models.py` 中创建 `UserSettings` 模型，并与 `User` 模型建立一对一关联（OneToOneField）。
+    *   √ 字段：`gemini_api_key` (安全存储!), `email_signature_name`, `email_signature_phone`, `email_from`, `email_password` (安全存储!), `email_to` (CharField, 处理逗号分隔), `smtp_server`, `smtp_port`, `send_time` (TimeField, 用于调度), `USER_NAME`.env中的用户中文名，用于构建邮件标题的，`is_active` (BooleanField, 用于启用/禁用报告)。
+    *   √ **安全提示：** 使用 `django-environ` 或类似库管理应用级密钥（如 Django 的 `SECRET_KEY`）。对于用户密钥（API Key, 密码），考虑在数据库中加密存储（例如使用 `django-cryptography` 或 Fernet 库），或者如果复杂度允许，使用专门的密钥管理服务。*初期可以简单处理，但要为后续增强安全性做计划*。
+2.  √ **视图（Views）与表单（Forms）：**
+    *   √ 为 `UserSettings` 创建一个 Django `ModelForm`。
+    *   √ 创建一个视图 (`UserSettingsUpdateView`)，允许用户编辑自己的设置。确保只有登录用户能编辑自己的设置。可以使用 Django 的通用视图 `UpdateView` 或自定义基于函数的视图。
+    *   √ 为设置表单创建一个模板 (`reporter/user_settings_form.html`)。
+    *   √ 添加设置视图的 URL 模式。
+3.  √ **管理后台集成：**
+    *   √ （可选）允许管理员通过 Django Admin 查看/编辑 `UserSettings`。在 `reporter/admin.py` 中注册 `UserSettings` 模型。
 
 **阶段三：基于 Web 的内容管理（替换 Git 获取）**
 

@@ -1,0 +1,151 @@
+{% extends 'reporter/base.html' %}
+
+{% block title %}个人设置 - 自动日报生成器{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title">个人设置</h4>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <h5>API设置</h5>
+                <div class="mb-3">
+                    <label for="{{ form.gemini_api_key.id_for_label }}" class="form-label">{{ form.gemini_api_key.label }}</label>
+                    {{ form.gemini_api_key }}
+                    {% if form.gemini_api_key.help_text %}
+                        <div class="form-text">{{ form.gemini_api_key.help_text }}</div>
+                    {% endif %}
+                    {% if form.gemini_api_key.errors %}
+                        <div class="invalid-feedback d-block">{{ form.gemini_api_key.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>个人信息</h5>
+                <div class="mb-3">
+                    <label for="{{ form.user_name.id_for_label }}" class="form-label">{{ form.user_name.label }}</label>
+                    {{ form.user_name }}
+                    {% if form.user_name.help_text %}
+                        <div class="form-text">{{ form.user_name.help_text }}</div>
+                    {% endif %}
+                    {% if form.user_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.user_name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.email_signature_name.id_for_label }}" class="form-label">{{ form.email_signature_name.label }}</label>
+                    {{ form.email_signature_name }}
+                    {% if form.email_signature_name.help_text %}
+                        <div class="form-text">{{ form.email_signature_name.help_text }}</div>
+                    {% endif %}
+                    {% if form.email_signature_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.email_signature_name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.email_signature_phone.id_for_label }}" class="form-label">{{ form.email_signature_phone.label }}</label>
+                    {{ form.email_signature_phone }}
+                    {% if form.email_signature_phone.help_text %}
+                        <div class="form-text">{{ form.email_signature_phone.help_text }}</div>
+                    {% endif %}
+                    {% if form.email_signature_phone.errors %}
+                        <div class="invalid-feedback d-block">{{ form.email_signature_phone.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>邮件设置</h5>
+                <div class="mb-3">
+                    <label for="{{ form.email_from.id_for_label }}" class="form-label">{{ form.email_from.label }}</label>
+                    {{ form.email_from }}
+                    {% if form.email_from.help_text %}
+                        <div class="form-text">{{ form.email_from.help_text }}</div>
+                    {% endif %}
+                    {% if form.email_from.errors %}
+                        <div class="invalid-feedback d-block">{{ form.email_from.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.email_password.id_for_label }}" class="form-label">{{ form.email_password.label }}</label>
+                    {{ form.email_password }}
+                    {% if form.email_password.help_text %}
+                        <div class="form-text">{{ form.email_password.help_text }}</div>
+                    {% endif %}
+                    {% if form.email_password.errors %}
+                        <div class="invalid-feedback d-block">{{ form.email_password.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.email_to.id_for_label }}" class="form-label">{{ form.email_to.label }}</label>
+                    {{ form.email_to }}
+                    {% if form.email_to.help_text %}
+                        <div class="form-text">{{ form.email_to.help_text }}</div>
+                    {% endif %}
+                    {% if form.email_to.errors %}
+                        <div class="invalid-feedback d-block">{{ form.email_to.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.smtp_server.id_for_label }}" class="form-label">{{ form.smtp_server.label }}</label>
+                    {{ form.smtp_server }}
+                    {% if form.smtp_server.help_text %}
+                        <div class="form-text">{{ form.smtp_server.help_text }}</div>
+                    {% endif %}
+                    {% if form.smtp_server.errors %}
+                        <div class="invalid-feedback d-block">{{ form.smtp_server.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.smtp_port.id_for_label }}" class="form-label">{{ form.smtp_port.label }}</label>
+                    {{ form.smtp_port }}
+                    {% if form.smtp_port.help_text %}
+                        <div class="form-text">{{ form.smtp_port.help_text }}</div>
+                    {% endif %}
+                    {% if form.smtp_port.errors %}
+                        <div class="invalid-feedback d-block">{{ form.smtp_port.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>发送设置</h5>
+                <div class="mb-3">
+                    <label for="{{ form.send_time.id_for_label }}" class="form-label">{{ form.send_time.label }}</label>
+                    {{ form.send_time }}
+                    {% if form.send_time.help_text %}
+                        <div class="form-text">{{ form.send_time.help_text }}</div>
+                    {% endif %}
+                    {% if form.send_time.errors %}
+                        <div class="invalid-feedback d-block">{{ form.send_time.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3 form-check">
+                    {{ form.is_active }}
+                    <label for="{{ form.is_active.id_for_label }}" class="form-check-label">{{ form.is_active.label }}</label>
+                    {% if form.is_active.help_text %}
+                        <div class="form-text">{{ form.is_active.help_text }}</div>
+                    {% endif %}
+                    {% if form.is_active.errors %}
+                        <div class="invalid-feedback d-block">{{ form.is_active.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">保存设置</button>
+        </form>
+    </div>
+</div>
+{% endblock %} 
