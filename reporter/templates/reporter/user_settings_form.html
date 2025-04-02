@@ -1,151 +1,547 @@
 {% extends 'reporter/base.html' %}
+{% load widget_tweaks %}
 
-{% block title %}个人设置 - 自动日报生成器{% endblock %}
+{% block title %}用户设置 | 自动日报系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 日期选择器样式 */
+    #date-picker-card {
+        border: 2px solid #dee2e6;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    /* 表头样式 */
+    .table thead th {
+        text-align: center;
+        font-weight: bold;
+        background-color: #f8f9fa;
+        color: #495057;
+        font-size: 14px;
+        padding: 8px 0;
+    }
+    
+    /* 表格样式 */
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table td {
+        padding: 5px;
+        vertical-align: middle;
+        text-align: center;
+    }
+    
+    /* 按钮样式 */
+    .table button {
+        height: 38px;
+        font-weight: bold;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    
+    .table button.btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+        color: white;
+    }
+    
+    .table button.btn-outline-secondary {
+        background-color: #f8f9fa;
+        border-color: #6c757d;
+        color: #6c757d;
+    }
+    
+    .table button.btn-outline-danger {
+        background-color: #fff9f9;
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+    
+    .table button.btn-outline-secondary:hover {
+        background-color: #e2e6ea;
+    }
+    
+    .table button.btn-outline-danger:hover {
+        background-color: #ffeaea;
+    }
+    
+    /* 表头标题 */
+    #current-month-header {
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    /* 当月标题 */
+    .card-header.bg-light {
+        background-color: #f1f8ff !important;
+        border-bottom: 1px solid #c8d7e6;
+    }
+    
+    /* 调试信息面板 */
+    #debug-info {
+        margin-top: 15px;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h4 class="card-title">个人设置</h4>
-    </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-            
-            <div class="mb-4">
-                <h5>API设置</h5>
-                <div class="mb-3">
-                    <label for="{{ form.gemini_api_key.id_for_label }}" class="form-label">{{ form.gemini_api_key.label }}</label>
-                    {{ form.gemini_api_key }}
-                    {% if form.gemini_api_key.help_text %}
-                        <div class="form-text">{{ form.gemini_api_key.help_text }}</div>
-                    {% endif %}
-                    {% if form.gemini_api_key.errors %}
-                        <div class="invalid-feedback d-block">{{ form.gemini_api_key.errors }}</div>
-                    {% endif %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>用户设置</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <!-- 左侧表单 -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">基本设置</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.user_name.id_for_label }}" class="form-label">用户中文名</label>
+                                    {{ form.user_name|add_class:"form-control" }}
+                                    <div class="form-text">{{ form.user_name.help_text }}</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.gemini_api_key.id_for_label }}" class="form-label">Gemini API密钥</label>
+                                    {{ form.gemini_api_key|add_class:"form-control" }}
+                                    <div class="form-text">{{ form.gemini_api_key.help_text }}</div>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    {{ form.use_client_proxy|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.use_client_proxy.id_for_label }}">使用客户端代理</label>
+                                    <div class="form-text">{{ form.use_client_proxy.help_text }}</div>
+                                </div>
+                                
+                                <h5 class="mt-4 mb-3">邮件签名</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.email_signature_name.id_for_label }}" class="form-label">签名名称</label>
+                                    {{ form.email_signature_name|add_class:"form-control" }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.email_signature_phone.id_for_label }}" class="form-label">签名电话</label>
+                                    {{ form.email_signature_phone|add_class:"form-control" }}
+                                </div>
+                            </div>
+                            
+                            <!-- 右侧表单 -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">邮件设置</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.email_from.id_for_label }}" class="form-label">发件人邮箱</label>
+                                    {{ form.email_from|add_class:"form-control" }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.email_password.id_for_label }}" class="form-label">邮箱密码/授权码</label>
+                                    {{ form.email_password|add_class:"form-control" }}
+                                    <div class="form-text">{{ form.email_password.help_text }}</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.email_to.id_for_label }}" class="form-label">收件人邮箱</label>
+                                    {{ form.email_to|add_class:"form-control" }}
+                                    <div class="form-text">{{ form.email_to.help_text }}</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.smtp_server.id_for_label }}" class="form-label">SMTP服务器</label>
+                                    {{ form.smtp_server|add_class:"form-control" }}
+                                    <div class="form-text">{{ form.smtp_server.help_text }}</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.smtp_port.id_for_label }}" class="form-label">SMTP端口</label>
+                                    {{ form.smtp_port|add_class:"form-control" }}
+                                    <div class="form-text">{{ form.smtp_port.help_text }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- 发送时间设置 -->
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h5 class="mb-3">发送时间设置</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.send_time.id_for_label }}" class="form-label">每日发送时间</label>
+                                    {{ form.send_time|add_class:"form-control" }}
+                                    <div class="form-text">{{ form.send_time.help_text }}</div>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    {{ form.is_active|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">启用自动发送</label>
+                                    <div class="form-text">{{ form.is_active.help_text }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- 日期选择器 -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h5 class="mb-3">发送日期设置</h5>
+                                <p class="text-muted">选择每月需要发送报告的日期。绿色表示已选中，红色表示周末。</p>
+                                
+                                <!-- 快捷按钮 -->
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-outline-primary btn-sm me-2" id="btn-select-all">全选</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm me-2" id="btn-select-none">清空</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm me-2" id="btn-select-workdays">选择工作日</button>
+                                </div>
+                                
+                                <!-- 日历选择器 -->
+                                <div class="card mb-4" id="date-picker-card">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0" id="current-month-header">选择日期</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- 使用表格布局代替复杂的flexbox -->
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr class="bg-light">
+                                                    <th>周日</th>
+                                                    <th>周一</th>
+                                                    <th>周二</th>
+                                                    <th>周三</th>
+                                                    <th>周四</th>
+                                                    <th>周五</th>
+                                                    <th>周六</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="calendar-body">
+                                                <!-- 日历内容由JavaScript动态生成 -->
+                                                <tr>
+                                                    <td colspan="7" class="text-center">
+                                                        <div class="spinner-border text-primary" role="status">
+                                                            <span class="visually-hidden">加载中...</span>
+                                                        </div>
+                                                        <p class="mt-2">正在生成日历...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <!-- 调试信息 -->
+                                <div class="alert alert-secondary" id="debug-info" style="display: none;">
+                                    <p><strong>当前选择的日期:</strong> <span id="selected-days-debug"></span></p>
+                                    <p><strong>表单字段值:</strong> <span id="form-field-value"></span></p>
+                                </div>
+                                
+                                <!-- 隐藏字段 -->
+                                {{ form.send_days }}
+                                {{ form.send_days_input }}
+                            </div>
+                        </div>
+                        
+                        <div class="text-end mt-4">
+                            <a href="{% url 'reporter:home' %}" class="btn btn-outline-secondary">返回</a>
+                            <button type="submit" class="btn btn-primary">保存设置</button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            
-            <div class="mb-4">
-                <h5>个人信息</h5>
-                <div class="mb-3">
-                    <label for="{{ form.user_name.id_for_label }}" class="form-label">{{ form.user_name.label }}</label>
-                    {{ form.user_name }}
-                    {% if form.user_name.help_text %}
-                        <div class="form-text">{{ form.user_name.help_text }}</div>
-                    {% endif %}
-                    {% if form.user_name.errors %}
-                        <div class="invalid-feedback d-block">{{ form.user_name.errors }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.email_signature_name.id_for_label }}" class="form-label">{{ form.email_signature_name.label }}</label>
-                    {{ form.email_signature_name }}
-                    {% if form.email_signature_name.help_text %}
-                        <div class="form-text">{{ form.email_signature_name.help_text }}</div>
-                    {% endif %}
-                    {% if form.email_signature_name.errors %}
-                        <div class="invalid-feedback d-block">{{ form.email_signature_name.errors }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.email_signature_phone.id_for_label }}" class="form-label">{{ form.email_signature_phone.label }}</label>
-                    {{ form.email_signature_phone }}
-                    {% if form.email_signature_phone.help_text %}
-                        <div class="form-text">{{ form.email_signature_phone.help_text }}</div>
-                    {% endif %}
-                    {% if form.email_signature_phone.errors %}
-                        <div class="invalid-feedback d-block">{{ form.email_signature_phone.errors }}</div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="mb-4">
-                <h5>邮件设置</h5>
-                <div class="mb-3">
-                    <label for="{{ form.email_from.id_for_label }}" class="form-label">{{ form.email_from.label }}</label>
-                    {{ form.email_from }}
-                    {% if form.email_from.help_text %}
-                        <div class="form-text">{{ form.email_from.help_text }}</div>
-                    {% endif %}
-                    {% if form.email_from.errors %}
-                        <div class="invalid-feedback d-block">{{ form.email_from.errors }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.email_password.id_for_label }}" class="form-label">{{ form.email_password.label }}</label>
-                    {{ form.email_password }}
-                    {% if form.email_password.help_text %}
-                        <div class="form-text">{{ form.email_password.help_text }}</div>
-                    {% endif %}
-                    {% if form.email_password.errors %}
-                        <div class="invalid-feedback d-block">{{ form.email_password.errors }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.email_to.id_for_label }}" class="form-label">{{ form.email_to.label }}</label>
-                    {{ form.email_to }}
-                    {% if form.email_to.help_text %}
-                        <div class="form-text">{{ form.email_to.help_text }}</div>
-                    {% endif %}
-                    {% if form.email_to.errors %}
-                        <div class="invalid-feedback d-block">{{ form.email_to.errors }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.smtp_server.id_for_label }}" class="form-label">{{ form.smtp_server.label }}</label>
-                    {{ form.smtp_server }}
-                    {% if form.smtp_server.help_text %}
-                        <div class="form-text">{{ form.smtp_server.help_text }}</div>
-                    {% endif %}
-                    {% if form.smtp_server.errors %}
-                        <div class="invalid-feedback d-block">{{ form.smtp_server.errors }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.smtp_port.id_for_label }}" class="form-label">{{ form.smtp_port.label }}</label>
-                    {{ form.smtp_port }}
-                    {% if form.smtp_port.help_text %}
-                        <div class="form-text">{{ form.smtp_port.help_text }}</div>
-                    {% endif %}
-                    {% if form.smtp_port.errors %}
-                        <div class="invalid-feedback d-block">{{ form.smtp_port.errors }}</div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="mb-4">
-                <h5>发送设置</h5>
-                <div class="mb-3">
-                    <label for="{{ form.send_time.id_for_label }}" class="form-label">{{ form.send_time.label }}</label>
-                    {{ form.send_time }}
-                    {% if form.send_time.help_text %}
-                        <div class="form-text">{{ form.send_time.help_text }}</div>
-                    {% endif %}
-                    {% if form.send_time.errors %}
-                        <div class="invalid-feedback d-block">{{ form.send_time.errors }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-3 form-check">
-                    {{ form.is_active }}
-                    <label for="{{ form.is_active.id_for_label }}" class="form-check-label">{{ form.is_active.label }}</label>
-                    {% if form.is_active.help_text %}
-                        <div class="form-text">{{ form.is_active.help_text }}</div>
-                    {% endif %}
-                    {% if form.is_active.errors %}
-                        <div class="invalid-feedback d-block">{{ form.is_active.errors }}</div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">保存设置</button>
-        </form>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('日期选择器脚本已加载');
+        
+        // 获取当前日期和月份信息
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+        
+        // 设置当前月份显示
+        const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
+        const currentMonthHeader = document.getElementById('current-month-header');
+        if (currentMonthHeader) {
+            currentMonthHeader.textContent = `${currentYear}年 ${monthNames[currentMonth]} - 选择发送日期`;
+        }
+        
+        // 获取日历表格体
+        const calendarBody = document.getElementById('calendar-body');
+        if (!calendarBody) {
+            console.error('找不到日历表格体');
+            return;
+        }
+        
+        const sendDaysInput = document.getElementById('{{ form.send_days_input.id_for_label }}');
+        if (!sendDaysInput) {
+            console.error('找不到send_days_input字段');
+            return;
+        }
+        
+        console.log('send_days_input ID:', '{{ form.send_days_input.id_for_label }}');
+        console.log('send_days ID:', '{{ form.send_days.id_for_label }}');
+        
+        // 获取选中的日期
+        let selectedDays = {{ selected_days|safe }};
+        console.log('初始选择的日期:', selectedDays);
+        
+        // 如果还没有选择的日期，初始化为空数组
+        if (!Array.isArray(selectedDays)) {
+            console.warn('selectedDays不是数组，重置为空数组');
+            selectedDays = [];
+        }
+        
+        // 调试信息
+        const debugInfo = document.getElementById('debug-info');
+        const selectedDaysDebug = document.getElementById('selected-days-debug');
+        const formFieldValue = document.getElementById('form-field-value');
+        
+        if (debugInfo && selectedDaysDebug && formFieldValue) {
+            // 显示调试信息
+            debugInfo.style.display = 'block';
+            selectedDaysDebug.textContent = JSON.stringify(selectedDays);
+            formFieldValue.textContent = sendDaysInput.value;
+        }
+        
+        // 生成日历
+        generateCalendar(currentYear, currentMonth);
+        
+        // 全选按钮
+        const btnSelectAll = document.getElementById('btn-select-all');
+        if (btnSelectAll) {
+            btnSelectAll.addEventListener('click', function() {
+                selectedDays = [];
+                for (let day = 1; day <= getDaysInMonth(currentYear, currentMonth); day++) {
+                    selectedDays.push(day.toString());
+                }
+                updateButtonsState();
+                updateHiddenField();
+                
+                // 更新调试信息
+                if (selectedDaysDebug && formFieldValue) {
+                    selectedDaysDebug.textContent = JSON.stringify(selectedDays);
+                    formFieldValue.textContent = sendDaysInput.value;
+                }
+            });
+        }
+        
+        // 清空按钮
+        const btnSelectNone = document.getElementById('btn-select-none');
+        if (btnSelectNone) {
+            btnSelectNone.addEventListener('click', function() {
+                selectedDays = [];
+                updateButtonsState();
+                updateHiddenField();
+                
+                // 更新调试信息
+                if (selectedDaysDebug && formFieldValue) {
+                    selectedDaysDebug.textContent = JSON.stringify(selectedDays);
+                    formFieldValue.textContent = sendDaysInput.value;
+                }
+            });
+        }
+        
+        // 选择工作日按钮
+        const btnSelectWorkdays = document.getElementById('btn-select-workdays');
+        if (btnSelectWorkdays) {
+            btnSelectWorkdays.addEventListener('click', function() {
+                const workdays = calculateWorkdays(currentYear, currentMonth);
+                selectedDays = workdays.map(day => day.toString());
+                updateButtonsState();
+                updateHiddenField();
+                
+                // 更新调试信息
+                if (selectedDaysDebug && formFieldValue) {
+                    selectedDaysDebug.textContent = JSON.stringify(selectedDays);
+                    formFieldValue.textContent = sendDaysInput.value;
+                }
+            });
+        }
+        
+        // 获取月份天数
+        function getDaysInMonth(year, month) {
+            return new Date(year, month + 1, 0).getDate();
+        }
+        
+        // 生成日历表格
+        function generateCalendar(year, month) {
+            // 清空日历表格
+            calendarBody.innerHTML = '';
+            
+            // 获取月份的第一天是星期几（0=周日, 1=周一, ..., 6=周六）
+            const firstDay = new Date(year, month, 1).getDay();
+            
+            // 获取月份的天数
+            const daysInMonth = getDaysInMonth(year, month);
+            
+            // 计算行数（包括开始的空行）
+            const numRows = Math.ceil((firstDay + daysInMonth) / 7);
+            
+            // 日期计数器
+            let date = 1;
+            
+            // 生成日历行
+            for (let i = 0; i < numRows; i++) {
+                // 创建新行
+                const row = document.createElement('tr');
+                
+                // 生成单元格
+                for (let j = 0; j < 7; j++) {
+                    // 创建单元格
+                    const cell = document.createElement('td');
+                    
+                    // 填充日期
+                    if (i === 0 && j < firstDay) {
+                        // 第一行前面的空白
+                        row.appendChild(cell);
+                    } else if (date <= daysInMonth) {
+                        // 创建日期按钮
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        
+                        // 判断是否是周末 (0是周日，6是周六)
+                        const isWeekend = (j === 0 || j === 6);
+                        
+                        // 设置按钮样式
+                        btn.className = 'btn w-100';
+                        
+                        // 判断是否选中
+                        if (selectedDays.includes(date.toString())) {
+                            btn.classList.add('btn-success');
+                        } else {
+                            // 周末使用不同颜色
+                            if (isWeekend) {
+                                btn.classList.add('btn-outline-danger');
+                            } else {
+                                btn.classList.add('btn-outline-secondary');
+                            }
+                        }
+                        
+                        btn.textContent = date;
+                        btn.dataset.day = date;
+                        btn.dataset.weekend = isWeekend ? 'true' : 'false';
+                        
+                        // 点击事件
+                        btn.addEventListener('click', function() {
+                            const dayStr = this.dataset.day;
+                            const dayIndex = selectedDays.indexOf(dayStr);
+                            const isWeekend = this.dataset.weekend === 'true';
+                            
+                            if (dayIndex === -1) {
+                                // 添加日期
+                                selectedDays.push(dayStr);
+                                if (isWeekend) {
+                                    this.classList.remove('btn-outline-danger');
+                                } else {
+                                    this.classList.remove('btn-outline-secondary');
+                                }
+                                this.classList.add('btn-success');
+                            } else {
+                                // 移除日期
+                                selectedDays.splice(dayIndex, 1);
+                                this.classList.remove('btn-success');
+                                if (isWeekend) {
+                                    this.classList.add('btn-outline-danger');
+                                } else {
+                                    this.classList.add('btn-outline-secondary');
+                                }
+                            }
+                            
+                            // 更新隐藏字段
+                            updateHiddenField();
+                            
+                            // 更新调试信息
+                            if (selectedDaysDebug && formFieldValue) {
+                                selectedDaysDebug.textContent = JSON.stringify(selectedDays);
+                                formFieldValue.textContent = sendDaysInput.value;
+                            }
+                        });
+                        
+                        cell.appendChild(btn);
+                        row.appendChild(cell);
+                        date++;
+                    } else {
+                        // 超出当月天数的空白
+                        row.appendChild(cell);
+                    }
+                }
+                
+                // 添加行到表格
+                calendarBody.appendChild(row);
+                
+                // 如果已经填完所有日期，结束循环
+                if (date > daysInMonth) {
+                    break;
+                }
+            }
+            
+            console.log('日历生成完成');
+        }
+        
+        // 计算当月工作日
+        function calculateWorkdays(year, month) {
+            const daysInMonth = getDaysInMonth(year, month);
+            const workdays = [];
+            
+            // 获取当月的所有工作日（周一至周五）
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dayOfWeek = date.getDay(); // 0是周日，1-5是周一至周五，6是周六
+                
+                // 如果是工作日（周一至周五）
+                if (dayOfWeek > 0 && dayOfWeek < 6) {
+                    workdays.push(day);
+                }
+            }
+            
+            return workdays;
+        }
+        
+        // 更新按钮状态
+        function updateButtonsState() {
+            const dateButtons = document.querySelectorAll('button[data-day]');
+            dateButtons.forEach(btn => {
+                const day = btn.dataset.day;
+                const isWeekend = btn.dataset.weekend === 'true';
+                
+                if (selectedDays.includes(day)) {
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.remove('btn-outline-danger');
+                    btn.classList.add('btn-success');
+                } else {
+                    btn.classList.remove('btn-success');
+                    if (isWeekend) {
+                        btn.classList.add('btn-outline-danger');
+                    } else {
+                        btn.classList.add('btn-outline-secondary');
+                    }
+                }
+            });
+        }
+        
+        // 更新隐藏字段
+        function updateHiddenField() {
+            sendDaysInput.value = selectedDays.join(',');
+            console.log('更新隐藏字段值:', sendDaysInput.value);
+        }
+        
+        // 初始化隐藏字段
+        updateHiddenField();
+        console.log('日期选择器初始化完成');
+    });
+</script>
 {% endblock %} 

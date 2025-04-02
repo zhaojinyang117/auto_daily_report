@@ -8,9 +8,14 @@
     <p class="lead">这是一个基于Web的自动报告工具，支持多用户、独立配置、网页内容管理、可配置的任务调度和历史记录查看。</p>
     <hr class="my-4">
     <p>使用此工具可以简化您的日报生成流程，自动处理内容并发送邮件。</p>
+    <div class="mt-4">
+        <a href="{% url 'reporter:extract_content' %}" class="btn btn-success">
+            <i class="bi bi-envelope"></i> 查看并发送今日日报
+        </a>
+    </div>
 </div>
 
-<div class="row">
+<div class="row mt-4">
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">

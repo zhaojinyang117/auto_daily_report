@@ -70,37 +70,42 @@
 
 **阶段四：集成核心逻辑（处理与发送）**
 
-1.  **重构现有模块：**
-    *   将 `gemini_processor.py`, `email_generator.py`, `email_sender.py` 中的核心逻辑移入 `reporter` 应用内的工具函数或类中（例如放在 `reporter/services.py` 或 `reporter/utils.py`）。
-    *   修改这些函数，使其接受用户特定的配置（从 `UserSettings` 模型获取）和内容（从 `MonthlyPlan` 模型获取/提取）作为参数，而不是依赖全局 `CONFIG` 或 `.env` 文件。
-    *   确保在需要时，使用用户特定的设置来实例化 `GeminiProcessor` 和 `EmailSender` 类。
-2.  **创建核心报告发送服务：**
-    *   在 `reporter/services.py` 中创建一个函数 `send_user_report(user: User, specific_date: date = None)`。
-    *   此函数将：
-        *   获取目标日期（用户时区的今天日期，或指定的日期）。
-        *   获取用户的 `UserSettings`。检查 `is_active` 是否为 True。
-        *   获取用户对应目标年月 `MonthlyPlan`。
-        *   调用调整后的 `extract_content_for_date` 逻辑，传入计划内容和目标日期。
-        *   如果找到内容：
-            *   实例化 `GeminiProcessor`（如果 API key 存在）并处理内容。
-            *   使用用户设置和处理后的内容实例化 `EmailGenerator`，获取邮件主题和正文。
-            *   使用用户设置实例化 `EmailSender` 并发送邮件。
-            *   返回成功状态/消息。
-        *   如果未找到内容/设置或发生错误，返回错误状态/消息。
+1.  √ **重构现有模块：**
+    *   √ 将 `gemini_processor.py`, `email_generator.py`, `email_sender.py` 中的核心逻辑移入 `reporter` 应用内的工具函数或类中（例如放在 `reporter/services.py` 或 `reporter/utils.py`）。
+    *   √ 修改这些函数，使其接受用户特定的配置（从 `UserSettings` 模型获取）和内容（从 `MonthlyPlan` 模型获取/提取）作为参数，而不是依赖全局 `CONFIG` 或 `.env` 文件。
+    *   √ 确保在需要时，使用用户特定的设置来实例化 `GeminiProcessor` 和 `EmailSender` 类。
+2.  √ **创建核心报告发送服务：**
+    *   √ 在 `reporter/services.py` 中创建一个函数 `send_user_report(user: User, specific_date: date = None)`。
+    *   √ 此函数将：
+        *   √ 获取目标日期（用户时区的今天日期，或指定的日期）。
+        *   √ 获取用户的 `UserSettings`。检查 `is_active` 是否为 True。
+        *   √ 获取用户对应目标年月 `MonthlyPlan`。
+        *   √ 调用调整后的 `extract_content_for_date` 逻辑，传入计划内容和目标日期。
+        *   √ 如果找到内容：
+            *   √ 实例化 `GeminiProcessor`（如果 API key 存在）并处理内容。
+            *   √ 使用用户设置和处理后的内容实例化 `EmailGenerator`，获取邮件主题和正文。
+            *   √ 使用用户设置实例化 `EmailSender` 并发送邮件。
+            *   √ 返回成功状态/消息。
+        *   √ 如果未找到内容/设置或发生错误，返回错误状态/消息。
 
 **阶段五：调度与后台任务**
 
-1.  **选择调度方法：** 在方案 A (cron + manage.py) 。
-2.  **创建管理命令：**
-    *   创建 `reporter/management/commands/send_daily_reports.py`。
-    *   该命令将：
-        *   遍历所有拥有活动 `UserSettings` (`is_active=True`) 的 `User` 对象。
-        *   确定当前时间。
-        *   对每个用户，检查其配置的 `send_time` 是否与当前小时匹配（或落在当前执行窗口内）。
-        *   如果匹配，调用阶段四创建的 `send_user_report(user)` 服务函数。
-        *   记录每个用户的执行结果（成功/失败）（日志记录将在阶段六详述）。
-        *   **排队（简化处理）：** 按顺序处理用户。如果一个用户失败，记录日志并继续处理下一个。对于 1C1G 服务器，在一个每 5-15 分钟运行一次的 cron 任务中顺序处理 1-5 个用户应该是可行的。初期避免复杂的队列系统。
-3.  **系统 Cron Job：**
+1.  √ **选择调度方法：** 在方案 A (cron + manage.py) 。
+2.  √ **创建管理命令：**
+    *   √ 创建 `reporter/management/commands/send_daily_reports.py`。
+    *   √ 该命令将：
+        *   √ 遍历所有拥有活动 `UserSettings` (`is_active=True`) 的 `User` 对象。
+        *   √ 确定当前时间。
+        *   √ 对每个用户，检查其配置的 `send_time` 是否与当前小时匹配（或落在当前执行窗口内）。
+        *   √ 如果匹配，调用阶段四创建的 `send_user_report(user)` 服务函数。
+        *   √ 记录每个用户的执行结果（成功/失败）（日志记录将在阶段六详述）。
+        *   √ **排队（简化处理）：** 按顺序处理用户。如果一个用户失败，记录日志并继续处理下一个。对于 1C1G 服务器，在一个每 5-15 分钟运行一次的 cron 任务中顺序处理 1-5 个用户应该是可行的。初期避免复杂的队列系统。
+3.  √ **发送日期设置功能：**
+    *   √ 添加 `send_days` 字段到 `UserSettings` 模型，用于存储每月需要发送报告的日期。
+    *   √ 在设置界面添加日历选择器，允许用户自定义选择每月的发送日期。
+    *   √ 提供快捷按钮（全选、清空、选择工作日）以便于用户快速设置。
+    *   √ 在 `send_user_report` 服务中添加验证，确保只在用户选择的日期发送报告。
+4.  **系统 Cron Job：**
     *   设置一个系统 `cron` 任务来定期运行该管理命令（例如，每 15 分钟或每小时）。
     *   示例 crontab 条目：
         ```bash

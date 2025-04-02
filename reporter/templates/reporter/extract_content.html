@@ -1,56 +1,148 @@
 {% extends 'reporter/base.html' %}
+{% load static %}
 
-{% block title %}提取日报内容 - 自动日报生成器{% endblock %}
+{% block title %}内容提取 | 自动日报系统{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h4 class="card-title">提取日报内容</h4>
-    </div>
-    <div class="card-body">
-        <div class="mb-4">
-            <h5>日期信息</h5>
-            <p>
-                目标日期: <strong>{{ date|date:"Y-m-d" }}</strong>
-                {% if plan %}
-                    <br>
-                    来源计划: <strong>{{ plan.year }}年{{ plan.month }}月计划</strong>
-                {% endif %}
-                {% if date_used %}
-                    <br>
-                    使用日期: <strong>{{ date_used }}</strong>
-                    {% if note %}
-                        <span class="text-info">{{ note }}</span>
-                    {% endif %}
-                {% endif %}
-            </p>
-        </div>
-
-        {% if error %}
-            <div class="alert alert-warning">
-                {{ error }}
-            </div>
-        {% elif content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">日报内容</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>日报内容提取</h5>
+                    <div>
+                        {% if content %}
+                            {% if client_proxy_data %}
+                            <button id="process-with-gemini" class="btn btn-primary btn-sm me-2">
+                                <i class="fas fa-magic"></i> 使用Gemini处理
+                            </button>
+                            <button id="send-email" class="btn btn-success btn-sm me-2" style="display: none;">
+                                <i class="fas fa-envelope"></i> 发送邮件
+                            </button>
+                            {% else %}
+                            <a href="{% url 'reporter:send_report' %}" class="btn btn-success btn-sm">
+                                <i class="fas fa-envelope"></i> 发送报告
+                            </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="content-preview">
-                        {{ content|linebreaks }}
+                    <!-- 日期选择器 -->
+                    <form method="get" action="{% url 'reporter:extract_content' %}" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <input type="date" name="date" class="form-control" 
+                                           value="{{ date|date:'Y-m-d' }}" required>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> 提取内容
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                {% if plan %}
+                                <div class="text-muted text-end">
+                                    使用计划: {{ plan.year }}年{{ plan.month }}月
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- 如果有客户端代理数据，存储它 -->
+                    {% if client_proxy_data %}
+                    <script type="application/json" id="client-proxy-data">
+                        {{ client_proxy_data|safe }}
+                    </script>
+                    <div class="alert alert-info mb-3">
+                        <strong>客户端代理模式:</strong> 将使用您的浏览器网络环境访问Gemini API。
+                        点击上方"使用Gemini处理"按钮开始处理内容。
+                    </div>
+                    {% endif %}
+
+                    <!-- 内容显示区域 -->
+                    {% if content %}
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between">
+                                    <span>{{ date|date:'Y-m-d' }} 的日报内容</span>
+                                    {% if note %}
+                                    <span class="text-warning">{{ note }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="content-display">
+                                    {{ content|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            {% if error %}
+                                <p>{{ error }}</p>
+                            {% else %}
+                                <p>请选择日期提取内容。</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'reporter:plan_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list"></i> 月度计划列表
+                        </a>
+                        <a href="{% url 'reporter:home' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-home"></i> 返回首页
+                        </a>
                     </div>
                 </div>
             </div>
-        {% endif %}
-
-        <div class="mt-4">
-            <a href="{% url 'reporter:plan_list' %}" class="btn btn-outline-secondary">返回计划列表</a>
-            {% if plan %}
-                <a href="{% url 'reporter:plan_update' plan.id %}" class="btn btn-outline-primary">编辑当前计划</a>
-            {% else %}
-                <a href="{% url 'reporter:plan_create' %}" class="btn btn-outline-primary">创建新计划</a>
-            {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 当前日期设为默认值
+        if (!document.querySelector('input[name="date"]').value) {
+            const today = new Date();
+            const formattedDate = today.toISOString().split('T')[0];
+            document.querySelector('input[name="date"]').value = formattedDate;
+        }
+    });
+</script>
+{% if client_proxy_data %}
+<script src="{% static 'reporter/js/client_proxy.js' %}"></script>
+<script>
+    // 在Gemini处理后显示发送邮件按钮
+    document.getElementById('process-with-gemini').addEventListener('click', function() {
+        // 延迟显示发送按钮，等待处理完成
+        setTimeout(function() {
+            const sendEmailButton = document.getElementById('send-email');
+            if (sendEmailButton) {
+                sendEmailButton.style.display = 'inline-block';
+            }
+        }, 3000); // 延迟3秒，确保处理完成
+    });
+    
+    // 添加发送邮件按钮的事件监听器
+    document.getElementById('send-email').addEventListener('click', function() {
+        // 添加确认对话框
+        if (!confirm('确定要发送当前处理后的内容吗？请确保已使用Gemini处理内容并检查结果。')) {
+            return; // 如果用户取消，则不继续执行
+        }
+        
+        // 获取当前处理后的文本内容
+        const processedContent = document.querySelector('.content-display').innerHTML;
+        const dateStr = "{{ date|date:'Y-m-d' }}";
+        
+        // 使用新函数发送处理后的内容
+        sendProcessedContent(processedContent, dateStr);
+    });
+</script>
+{% endif %}
 {% endblock %} 

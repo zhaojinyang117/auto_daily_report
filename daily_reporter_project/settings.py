@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "reporter",
+    "widget_tweaks",
 ]
 
 MIDDLEWARE = [
@@ -123,12 +124,44 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# 静态文件设置
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
 # 认证URL设置
-LOGIN_URL = 'reporter:login'
-LOGIN_REDIRECT_URL = 'reporter:home'
-LOGOUT_REDIRECT_URL = 'reporter:login'
+LOGIN_URL = "reporter:login"
+LOGIN_REDIRECT_URL = "reporter:home"
+LOGOUT_REDIRECT_URL = "reporter:login"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# 日志配置
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(BASE_DIR, "debug.log"),
+            "formatter": "verbose",
+        },
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["file", "console"],
+        "level": "DEBUG",
+    },
+}
