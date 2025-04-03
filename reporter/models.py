@@ -20,6 +20,9 @@ class UserSettings(models.Model):
     use_client_proxy = models.BooleanField(
         default=False, help_text="使用客户端代理访问Gemini API"
     )
+    gemini_timeout = models.IntegerField(
+        default=15, help_text="Gemini API请求超时时间（秒）"
+    )
 
     # 邮件签名
     email_signature_name = models.CharField(

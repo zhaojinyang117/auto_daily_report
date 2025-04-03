@@ -12,50 +12,80 @@ async function processWithClientProxy(apiData) {
         showLoadingState();
 
         // 从API数据中提取必要信息
-        const { api_key, prompt, original_content, model } = apiData;
+        const { api_key, prompt, original_content, model, timeout } = apiData;
+
+        // 设置超时时间（默认15秒）
+        const timeoutMs = (timeout || 15) * 1000;
 
         console.log("使用客户端代理模式调用Gemini API");
+        console.log(`API请求超时时间设置为: ${timeout || 15}秒`);
 
-        // 构建API请求
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${api_key}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: prompt
+        // 创建AbortController用于请求超时控制
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+            // 构建API请求
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${api_key}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: prompt
+                        }]
                     }]
-                }]
-            })
-        });
+                }),
+                signal: controller.signal  // 添加AbortController信号
+            });
 
-        // 检查响应状态
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`API调用失败: ${errorData.error?.message || '未知错误'}`);
+            // 清除超时计时器
+            clearTimeout(timeoutId);
+
+            // 检查响应状态
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`API调用失败: ${errorData.error?.message || '未知错误'}`);
+            }
+
+            // 处理响应
+            const data = await response.json();
+            let processedContent = data.candidates[0]?.content?.parts[0]?.text || '';
+
+            // 应用相同的格式处理
+            processedContent = formatText(processedContent);
+
+            // 更新UI显示处理后的内容
+            updateContentDisplay(processedContent);
+
+            // 返回处理结果
+            return {
+                success: true,
+                processedContent
+            };
+        } catch (error) {
+            // 清除超时计时器
+            clearTimeout(timeoutId);
+
+            // 重新抛出错误以便外部捕获
+            throw error;
         }
-
-        // 处理响应
-        const data = await response.json();
-        let processedContent = data.candidates[0]?.content?.parts[0]?.text || '';
-
-        // 应用相同的格式处理
-        processedContent = formatText(processedContent);
-
-        // 更新UI显示处理后的内容
-        updateContentDisplay(processedContent);
-
-        // 返回处理结果
-        return {
-            success: true,
-            processedContent
-        };
     } catch (error) {
         console.error("客户端代理处理失败:", error);
-        // 显示错误，回退到原始内容
-        showError(`客户端代理处理失败: ${error.message}`);
+
+        // 处理超时错误
+        if (error.name === 'AbortError') {
+            const timeoutError = `请求超时 (${apiData.timeout || 15}秒)`;
+            showError(`客户端代理处理失败: ${timeoutError}`);
+            console.error(timeoutError);
+        } else {
+            // 显示其他错误
+            showError(`客户端代理处理失败: ${error.message}`);
+        }
+
+        // 回退到原始内容
         updateContentDisplay(apiData.original_content);
         return {
             success: false,

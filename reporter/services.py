@@ -20,15 +20,19 @@ logger = logging.getLogger(__name__)
 class GeminiProcessor:
     """使用Gemini API处理内容的服务类"""
 
-    def __init__(self, api_key: str, use_client_proxy: bool = False) -> None:
+    def __init__(
+        self, api_key: str, use_client_proxy: bool = False, timeout: int = 15
+    ) -> None:
         """初始化GeminiProcessor
 
         Args:
             api_key: Gemini API密钥
             use_client_proxy: 是否使用客户端代理
+            timeout: API请求超时时间（秒）
         """
         self.api_key = api_key
         self.use_client_proxy = use_client_proxy
+        self.timeout = timeout
 
         # 配置API
         if self.use_client_proxy:
@@ -49,6 +53,9 @@ class GeminiProcessor:
 
         Returns:
             优化后的内容或包含API调用信息的字典
+
+        Raises:
+            Exception: 当API调用失败时抛出异常
         """
         # 生成通用提示
         prompt = f"""
@@ -75,11 +82,16 @@ class GeminiProcessor:
                 "prompt": prompt,
                 "original_content": content,
                 "model": "gemini-2.0-flash",
+                "timeout": self.timeout,  # 添加超时参数传递给前端
             }
 
         # 使用后端API进行处理
         try:
-            response = self.model.generate_content(prompt)
+            # 使用request_options设置超时
+            request_options = {"timeout": self.timeout}
+            response = self.model.generate_content(
+                prompt, request_options=request_options
+            )
             formatted_text = response.text.strip()
 
             # 处理文本格式，与old/gemini_processor.py中的格式化方式保持一致
@@ -93,9 +105,14 @@ class GeminiProcessor:
                 formatted_text = formatted_text.replace("<br><br><br>", "<br><br>")
 
             return formatted_text
+        except TimeoutError as e:
+            # 专门处理超时错误
+            logger.error(f"Gemini API请求超时: {e}")
+            raise Exception(f"Gemini API请求超时 ({self.timeout}秒): {e}")
         except Exception as e:
+            # 记录错误，但不默默地返回原始内容，而是重新抛出异常
             logger.error(f"Gemini API调用失败: {e}")
-            return content  # 如果API调用失败，返回原始内容
+            raise Exception(f"Gemini API调用失败: {e}")
 
 
 class EmailGenerator:
@@ -244,7 +261,10 @@ class EmailSender:
 
 
 def send_user_report(
-    user: User, specific_date: Optional[date] = None, force_send: bool = False
+    user: User,
+    specific_date: Optional[date] = None,
+    force_send: bool = False,
+    timeout: Optional[int] = None,
 ) -> Dict[str, Any]:
     """为指定用户发送报告
 
@@ -252,6 +272,7 @@ def send_user_report(
         user: 用户对象
         specific_date: 指定日期，如果为None则使用当前日期
         force_send: 是否强制发送，忽略激活状态
+        timeout: Gemini API请求超时时间（秒），如果为None则使用用户设置中的值
 
     Returns:
         包含状态和消息的字典
@@ -343,12 +364,21 @@ def send_user_report(
 
         # 使用Gemini处理内容（如有API密钥）
         processed_content = content  # 默认使用原始内容
+        gemini_error = None  # 记录Gemini处理错误
+
         if user_settings.gemini_api_key:
             try:
                 logger.info("开始使用Gemini处理内容...")
+                # 使用用户设置的超时时间，如果未指定则使用默认值
+                api_timeout = (
+                    timeout if timeout is not None else user_settings.gemini_timeout
+                )
+                logger.info(f"Gemini API超时时间设置为: {api_timeout}秒")
+
                 gemini_processor = GeminiProcessor(
                     user_settings.gemini_api_key,
                     use_client_proxy=user_settings.use_client_proxy,
+                    timeout=api_timeout,
                 )
                 processed_result = gemini_processor.format_learning_summary(content)
 
@@ -374,8 +404,13 @@ def send_user_report(
                 processed_content = processed_result
                 logger.info("Gemini处理内容完成")
             except Exception as e:
-                logger.error(f"Gemini处理失败: {e}")
-                # 如果处理失败，使用原始内容
+                error_message = f"Gemini处理失败: {e}"
+                logger.error(error_message)
+                # 记录错误信息
+                gemini_error = error_message
+
+                # 考虑用户可能不希望在处理失败时发送原始内容
+                # 这里仍使用原始内容，但在日志和邮件标题中标记
                 processed_content = content
         else:
             # 没有API密钥，使用原始内容
@@ -383,7 +418,10 @@ def send_user_report(
 
         # 生成邮件内容
         email_generator = EmailGenerator(user_settings, target_date)
+
+        # 获取邮件标题（不再在标题中添加标记）
         subject = email_generator.get_email_subject()
+
         html_content = email_generator.generate_email_html(processed_content)
 
         # 发送邮件
@@ -395,16 +433,23 @@ def send_user_report(
             if len(content_preview) > 500:
                 content_preview = content_preview[:500] + "..."
 
-            EmailLog.objects.create(
+            # 创建日志记录
+            log_entry = EmailLog.objects.create(
                 user=user,
                 status=EmailLog.STATUS_SUCCESS,
                 subject=subject,
                 content_preview=content_preview,
             )
 
+            # 如果有Gemini错误，记录在日志中
+            if gemini_error:
+                log_entry.error_message = gemini_error
+                log_entry.save()
+
             return {
                 "success": True,
-                "message": f"报告已成功发送至 {user_settings.email_to}",
+                "message": f"报告已成功发送至 {user_settings.email_to}"
+                + (" [使用原始内容]" if gemini_error else ""),
             }
         else:
             # 记录失败日志
