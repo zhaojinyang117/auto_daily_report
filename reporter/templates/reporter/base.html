@@ -15,6 +15,43 @@
     <link rel="stylesheet" href="{% static 'reporter/css/style.css' %}">
     <!-- 额外CSS -->
     {% block extra_css %}{% endblock %}
+    <style>
+        /* 重置所有z-index */
+        .navbar {
+            position: relative;
+            z-index: 1030;
+        }
+        .navbar .dropdown {
+            position: static;
+        }
+        .navbar .dropdown-menu {
+            position: absolute;
+            z-index: 1031 !important;
+            margin-top: 0;
+        }
+        .navbar .dropdown-menu.show {
+            display: block !important;
+        }
+        /* 确保其他元素的z-index较低 */
+        .card, .acrylic:not(.navbar):not(.dropdown-menu) {
+            position: relative;
+            z-index: 1;
+        }
+        .main-content {
+            position: relative;
+            z-index: 1;
+        }
+        .bg-settings-toggle {
+            z-index: 1020;
+        }
+        .bg-settings {
+            z-index: 1019;
+        }
+        /* 移除之前的自定义下拉菜单样式 */
+        .custom-dropdown-menu {
+            display: none;
+        }
+    </style>
 </head>
 <body class="custom-bg fade-in">
     <div class="container">
@@ -55,10 +92,16 @@
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">
                                     <i class="bi bi-person-circle"></i> {{ user.username }}
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end acrylic" aria-labelledby="navbarDropdown">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'reporter:password_change' %}">
+                                            <i class="bi bi-key"></i> 修改密码
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form method="post" action="{% url 'reporter:logout' %}" class="d-inline">
                                             {% csrf_token %}

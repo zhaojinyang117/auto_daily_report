@@ -7,6 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpRequest
+from django.contrib.auth.views import PasswordChangeView as BasePasswordChangeView
 from .models import UserSettings, MonthlyPlan, EmailLog
 from .forms import UserSettingsForm, MonthlyPlanForm
 from .services import (
@@ -508,3 +509,18 @@ def email_history(request: HttpRequest) -> HttpResponse:
     }
 
     return render(request, "reporter/email_history.html", context)
+
+
+class PasswordChangeView(LoginRequiredMixin, BasePasswordChangeView):
+    """密码修改视图"""
+
+    template_name = "reporter/password_change_form.html"
+    success_url = reverse_lazy("reporter:password_change_done")
+
+    def form_valid(self, form):
+        messages.success(self.request, "密码已成功修改！")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, "密码修改失败，请检查输入！")
+        return super().form_invalid(form)
