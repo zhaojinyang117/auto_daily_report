@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "reporter",
     "widget_tweaks",
+    "django_cron",
 ]
 
 MIDDLEWARE = [
@@ -165,3 +166,11 @@ LOGGING = {
         "level": "DEBUG",
     },
 }
+
+# Cron作业配置
+CRON_CLASSES = [
+    "reporter.cron.SendDailyReportsCronJob",
+]
+
+# Cron作业日志记录
+DJANGO_CRON_DELETE_LOGS_OLDER_THAN = 7  # 删除7天以前的日志

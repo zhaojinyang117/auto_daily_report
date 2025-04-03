@@ -2,6 +2,63 @@
 
 本文档详细介绍如何将自动日报生成器部署到生产环境。
 
+## 快速部署（一键安装）
+
+项目提供了一键安装脚本，可以自动完成所有部署步骤。这是推荐的部署方式，尤其适合不熟悉Linux服务器配置的用户。
+
+### 使用一键安装脚本
+
+1. 以root权限登录您的Linux服务器
+
+2. 下载安装脚本：
+```bash
+curl -O https://raw.githubusercontent.com/zhaojinyang117/auto_daily_report/main/install.sh
+# 或者如果已经克隆了仓库，脚本就在项目根目录下
+```
+
+3. 添加执行权限：
+```bash
+chmod +x install.sh
+```
+
+4. 运行安装脚本：
+```bash
+sudo bash install.sh
+```
+
+5. 按照交互式提示完成配置：
+   - 安装目录（默认为/var/www/auto_daily_report）
+   - Git仓库地址
+   - 环境变量配置（域名、API密钥、邮件设置等）
+   - 管理员账户创建
+   - HTTPS配置（可选）
+
+脚本会自动执行以下任务：
+- 检测操作系统并安装必要的系统依赖
+- 克隆和配置项目代码
+- 使用uv创建Python虚拟环境并安装依赖
+- 配置环境变量
+- 初始化数据库和收集静态文件
+- 设置Gunicorn服务
+- 配置Nginx服务器
+- 配置HTTPS（如果选择）
+- 设置定时任务和日志轮转
+- 测试安装并提供详细的使用说明
+
+安装完成后，脚本会显示网站地址、管理后台地址和其他重要信息。
+
+### 故障排除
+
+如果安装过程中遇到问题，脚本会提供详细的错误信息和排查建议。您也可以查看以下日志文件来排查问题：
+
+- Gunicorn日志：`sudo journalctl -u daily-reporter`
+- Nginx错误日志：`sudo cat /var/log/nginx/error.log`
+- 应用日志：`cat /安装目录/debug.log`
+
+## 手动部署详细步骤
+
+如果您希望手动部署或需要更精细地控制部署过程，以下是详细的步骤说明。
+
 ## 系统要求
 
 - 一台Linux服务器（建议配置：1核1G或更高）
@@ -29,7 +86,7 @@ mkdir -p /var/www
 cd /var/www
 
 # 克隆代码仓库
-git clone https://github.com/yourusername/auto_daily_report.git
+git clone https://github.com/zhaojinyang117/auto_daily_report.git
 cd auto_daily_report
 ```
 
