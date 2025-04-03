@@ -23,7 +23,7 @@ fi
 export DJANGO_SETTINGS_MODULE="daily_reporter_project.settings"
 
 # 运行Django管理命令
-python manage.py send_daily_reports
+uv run manage.py send_daily_reports
 
 # 记录执行日志
 echo "$(date): Daily report task executed" >> $PROJECT_PATH/logs/cron.log

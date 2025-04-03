@@ -207,7 +207,7 @@ setup_virtual_env() {
 
 # 生成随机Django密钥
 generate_django_secret_key() {
-    python3 -c 'import secrets; print(secrets.token_urlsafe(50))'
+    uv run -m secrets -c 'print(secrets.token_urlsafe(50))'
 }
 
 # 配置环境变量
@@ -324,14 +324,14 @@ initialize_database() {
     source .venv/bin/activate
     
     # 执行数据库迁移
-    python manage.py migrate
+    uv run manage.py migrate
     
     # 收集静态文件
-    python manage.py collectstatic --noinput
+    uv run manage.py collectstatic --noinput
     
     # 创建管理员用户
     print_yellow "创建管理员账户用于登录系统后台"
-    python manage.py createsuperuser
+    uv run manage.py createsuperuser
     
     print_green "数据库初始化完成"
 }
@@ -350,7 +350,7 @@ After=network.target
 User=www-data
 Group=www-data
 WorkingDirectory=$INSTALL_DIR
-ExecStart=$INSTALL_DIR/.venv/bin/gunicorn \\
+ExecStart=$INSTALL_DIR/.venv/bin/uv run -m gunicorn \\
     --access-logfile - \\
     --workers 1 \\
     --bind unix:$INSTALL_DIR/daily_reporter.sock \\
@@ -536,7 +536,7 @@ test_installation() {
             print_yellow "尝试重新收集静态文件..."
             cd "$INSTALL_DIR"
             source .venv/bin/activate
-            python manage.py collectstatic --noinput
+            uv run manage.py collectstatic --noinput
         fi
         
         # 检查背景图片是否存在
@@ -577,7 +577,7 @@ test_installation() {
         cd "$INSTALL_DIR"
         source .venv/bin/activate
         mkdir -p "$INSTALL_DIR/staticfiles"
-        python manage.py collectstatic --noinput
+        uv run manage.py collectstatic --noinput
     fi
     
     # 检查网站是否可访问
