@@ -487,24 +487,92 @@ setup_https() {
     print_blue "正在配置HTTPS..."
     
     read -p "是否配置HTTPS? [y/N]: " SETUP_HTTPS
-    if [[ $SETUP_HTTPS =~ ^[Yy]$ ]]; then
-        read -e -p "请输入域名 (例如 example.com): " DOMAIN_NAME
-        
-        if [ -z "$DOMAIN_NAME" ]; then
-            print_yellow "未提供域名，跳过HTTPS配置"
-            return
-        fi
-        
-        print_yellow "正在使用Let's Encrypt获取SSL证书..."
-        certbot --nginx -d "$DOMAIN_NAME" --non-interactive --agree-tos --email "webmaster@$DOMAIN_NAME" --redirect
-        
-        if [ $? -eq 0 ]; then
-            print_green "HTTPS配置成功"
-        else
-            print_red "HTTPS配置失败，请稍后手动运行: certbot --nginx -d $DOMAIN_NAME"
-        fi
-    else
+    if [[ ! $SETUP_HTTPS =~ ^[Yy]$ ]]; then
         print_yellow "跳过HTTPS配置"
+        return
+    fi
+    
+    read -e -p "请输入域名 (例如 example.com): " DOMAIN_NAME
+    if [ -z "$DOMAIN_NAME" ]; then
+        print_red "域名不能为空，跳过HTTPS配置"
+        return
+    fi
+    
+    # 更新.env文件中的ALLOWED_HOSTS
+    if grep -q "ALLOWED_HOSTS" "$INSTALL_DIR/.env"; then
+        # 提取现有的ALLOWED_HOSTS值
+        CURRENT_HOSTS=$(grep "ALLOWED_HOSTS" "$INSTALL_DIR/.env" | cut -d '=' -f2)
+        # 检查是否已包含域名
+        if ! echo "$CURRENT_HOSTS" | grep -q "$DOMAIN_NAME"; then
+            # 添加域名到ALLOWED_HOSTS
+            NEW_HOSTS="$CURRENT_HOSTS,$DOMAIN_NAME"
+            sed -i "s/ALLOWED_HOSTS=.*/ALLOWED_HOSTS=$NEW_HOSTS/g" "$INSTALL_DIR/.env"
+            print_yellow "已将 $DOMAIN_NAME 添加到 ALLOWED_HOSTS"
+        fi
+    fi
+    
+    # 更新Nginx站点配置，确保server_name正确设置
+    sed -i "s/server_name .*;/server_name $DOMAIN_NAME;/g" /etc/nginx/sites-available/daily-reporter
+    
+    # 创建正确的Nginx配置文件以支持HTTPS
+    cat > /etc/nginx/sites-available/daily-reporter << EOF
+server {
+    listen 80;
+    server_name $DOMAIN_NAME;
+    
+    # 重定向到HTTPS
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name $DOMAIN_NAME;
+    
+    # SSL证书配置将由certbot自动添加
+    
+    location = /favicon.ico { 
+        access_log off; 
+        log_not_found off; 
+    }
+    
+    location /static/ {
+        root $INSTALL_DIR;
+    }
+    
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:$INSTALL_DIR/daily_reporter.sock;
+    }
+}
+EOF
+    
+    # 启用站点配置
+    ln -sf /etc/nginx/sites-available/daily-reporter /etc/nginx/sites-enabled/
+    
+    # 重启Nginx以应用新配置
+    systemctl restart nginx
+    
+    print_yellow "正在使用Let's Encrypt获取SSL证书..."
+    
+    # 使用certbot获取证书并自动配置Nginx
+    certbot --nginx -d $DOMAIN_NAME
+    
+    # 确保证书应用于正确的配置文件
+    if [ -f "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem" ]; then
+        # 检查配置是否已包含SSL部分
+        if ! grep -q "ssl_certificate" /etc/nginx/sites-available/daily-reporter; then
+            # 手动添加SSL证书配置
+            sed -i "/server {/a \    ssl_certificate /etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem;\n    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem;" /etc/nginx/sites-available/daily-reporter
+        fi
+        
+        # 重启Nginx以应用SSL配置
+        systemctl restart nginx
+        
+        print_green "HTTPS配置成功"
+    else
+        print_red "证书获取失败，请检查域名DNS是否正确指向此服务器"
     fi
 }
 
