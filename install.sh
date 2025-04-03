@@ -99,21 +99,66 @@ clone_repository() {
     
     # 克隆仓库
     if [ ! -d "$INSTALL_DIR/.git" ]; then
-        read -e -p "请输入Git仓库地址 [默认: https://github.com/yourusername/auto_daily_report.git]: " REPO_URL
-        REPO_URL=${REPO_URL:-https://github.com/yourusername/auto_daily_report.git}
-        git clone "$REPO_URL" "$INSTALL_DIR"
+        read -e -p "请输入Git仓库地址 [默认: https://github.com/zhaojinyang117/auto_daily_report.git]: " REPO_URL
+        REPO_URL=${REPO_URL:-https://github.com/zhaojinyang117/auto_daily_report.git}
+        
+        # 添加分支选择
+        read -e -p "请输入要克隆的分支名称 [默认: django]: " BRANCH_NAME
+        BRANCH_NAME=${BRANCH_NAME:-django}
+        
+        print_yellow "正在克隆仓库 $REPO_URL 的 $BRANCH_NAME 分支..."
+        
+        # 使用 -b 参数指定分支
+        git clone -b "$BRANCH_NAME" "$REPO_URL" "$INSTALL_DIR"
+        
         if [ $? -ne 0 ]; then
-            print_red "克隆仓库失败，请检查仓库地址是否正确"
+            print_red "克隆仓库失败，请检查仓库地址和分支名称是否正确"
             exit 1
         fi
     else
         print_yellow "使用现有仓库目录"
         cd "$INSTALL_DIR"
+        
+        # 如果使用现有目录，询问是否切换分支
+        read -p "是否要切换到特定分支? [y/N]: " SWITCH_BRANCH
+        if [[ $SWITCH_BRANCH =~ ^[Yy]$ ]]; then
+            # 获取当前分支
+            CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+            print_yellow "当前分支: $CURRENT_BRANCH"
+            
+            # 获取远程所有分支
+            git fetch --all
+            
+            # 列出所有可用分支
+            print_yellow "可用的远程分支:"
+            git branch -r | grep -v "\->" | sed "s/origin\///"
+            
+            # 询问要切换到哪个分支
+            read -e -p "请输入要切换到的分支名称: " TARGET_BRANCH
+            
+            if [ ! -z "$TARGET_BRANCH" ]; then
+                git checkout "$TARGET_BRANCH"
+                if [ $? -ne 0 ]; then
+                    # 如果直接切换失败，尝试创建跟踪分支
+                    git checkout -b "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
+                    if [ $? -ne 0 ]; then
+                        print_red "切换分支失败，将保持在当前分支"
+                    else
+                        print_green "已切换到分支: $TARGET_BRANCH"
+                    fi
+                else
+                    print_green "已切换到分支: $TARGET_BRANCH"
+                fi
+            fi
+        fi
+        
+        # 更新代码
         git pull
     fi
     
     cd "$INSTALL_DIR"
     print_green "项目代码获取完成，当前目录: $(pwd)"
+    print_green "当前分支: $(git rev-parse --abbrev-ref HEAD)"
 }
 
 # 设置Python虚拟环境

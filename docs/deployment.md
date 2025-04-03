@@ -12,7 +12,7 @@
 
 2. 下载安装脚本：
 ```bash
-curl -O https://raw.githubusercontent.com/zhaojinyang117/auto_daily_report/main/install.sh
+curl -O https://raw.githubusercontent.com/zhaojinyang117/auto_daily_report/refs/heads/dev/install.sh
 # 或者如果已经克隆了仓库，脚本就在项目根目录下
 ```
 
