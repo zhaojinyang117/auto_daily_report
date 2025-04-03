@@ -25,12 +25,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-aep1k9ctom)!@h&qkkn5pt_&p-5$8&b+mjj%xxh%(lc22jx4_t"
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "django-insecure-aep1k9ctom)!@h&qkkn5pt_&p-5$8&b+mjj%xxh%(lc22jx4_t"
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "t", "yes", "y")
 
-ALLOWED_HOSTS = []
+# 允许的主机设置
+# 从环境变量中读取ALLOWED_HOSTS，如果未设置则默认接受所有域名
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+
+# CSRF信任的来源，用于解决HTTPS访问时的CSRF验证失败问题
+# 自动处理HTTP和HTTPS协议，确保与ALLOWED_HOSTS保持一致
+csrf_origins = []
+for host in ALLOWED_HOSTS:
+    if host != "*":  # 跳过通配符
+        if "://" not in host:
+            csrf_origins.append(f"http://{host}")
+            csrf_origins.append(f"https://{host}")
+        else:
+            csrf_origins.append(host)
+CSRF_TRUSTED_ORIGINS = csrf_origins
 
 
 # Application definition
@@ -123,10 +139,19 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = "static/"
+# 确保静态文件URL以斜杠开始和结束
+STATIC_URL = "/static/"
 
 # 静态文件设置
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+# 自定义静态文件目录，用于应用之外的静态文件
+STATICFILES_DIRS = [
+    # os.path.join(BASE_DIR, "static"),  # 如果有全局静态文件，可以取消注释
+]
+
+# 静态文件存储后端
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 
 # 认证URL设置
 LOGIN_URL = "reporter:login"

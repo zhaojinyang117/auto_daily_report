@@ -588,10 +588,33 @@ main() {
     # 设置捕获异常终止
     trap handle_exit ERR
     
-    print_blue "===== 自动日报生成器一键部署脚本 ====="
+    print_blue "===== 自动日报生成器部署与管理脚本 ====="
+    print_yellow "请选择操作类型:"
+    echo "1) 安装系统"
+    echo "2) 卸载系统"
+    read -p "请输入选项 [1-2]: " OPERATION_TYPE
     
     # 检查root权限
     check_root
+    
+    # 根据选择的操作类型执行不同的功能
+    case $OPERATION_TYPE in
+        1)
+            install_system
+            ;;
+        2)
+            uninstall_system
+            ;;
+        *)
+            print_red "无效的选择，请输入1或2"
+            exit 1
+            ;;
+    esac
+}
+
+# 安装系统
+install_system() {
+    print_blue "===== 开始安装自动日报生成器 ====="
     
     # 检测Linux发行版
     detect_distro
@@ -631,6 +654,120 @@ main() {
     
     # 安装完成提示
     installation_complete
+}
+
+# 卸载系统
+uninstall_system() {
+    print_blue "===== 开始卸载自动日报生成器 ====="
+    
+    # 确认卸载
+    print_red "警告：卸载将删除所有相关配置和数据！"
+    read -p "确认要卸载系统吗？这将删除所有相关数据和配置 [y/N]: " CONFIRM_UNINSTALL
+    if [[ ! $CONFIRM_UNINSTALL =~ ^[Yy]$ ]]; then
+        print_yellow "卸载操作已取消"
+        exit 0
+    fi
+    
+    # 获取安装目录
+    read -e -p "请输入当前安装目录 [默认: /var/www/auto_daily_report]: " INSTALL_DIR
+    INSTALL_DIR=${INSTALL_DIR:-/var/www/auto_daily_report}
+    
+    if [ ! -d "$INSTALL_DIR" ]; then
+        print_red "目录 $INSTALL_DIR 不存在，请确认安装目录"
+        exit 1
+    fi
+    
+    print_blue "正在停止服务..."
+    
+    # 停止并禁用服务
+    if systemctl is-active --quiet daily-reporter; then
+        systemctl stop daily-reporter
+        systemctl disable daily-reporter
+        print_green "已停止并禁用Gunicorn服务"
+    else
+        print_yellow "Gunicorn服务未运行"
+    fi
+    
+    # 删除systemd服务文件
+    if [ -f /etc/systemd/system/daily-reporter.service ]; then
+        rm -f /etc/systemd/system/daily-reporter.service
+        systemctl daemon-reload
+        print_green "已删除systemd服务文件"
+    fi
+    
+    print_blue "正在删除Nginx配置..."
+    
+    # 删除Nginx配置
+    if [ -f /etc/nginx/sites-enabled/daily-reporter ]; then
+        rm -f /etc/nginx/sites-enabled/daily-reporter
+        print_green "已删除Nginx站点链接"
+    fi
+    
+    if [ -f /etc/nginx/sites-available/daily-reporter ]; then
+        rm -f /etc/nginx/sites-available/daily-reporter
+        print_green "已删除Nginx站点配置"
+    fi
+    
+    # 重启Nginx
+    if systemctl is-active --quiet nginx; then
+        systemctl restart nginx
+        print_green "已重启Nginx服务"
+    fi
+    
+    print_blue "正在删除定时任务..."
+    
+    # 删除cron任务
+    if crontab -l 2>/dev/null | grep -q "$INSTALL_DIR"; then
+        (crontab -l 2>/dev/null | grep -v "$INSTALL_DIR") | crontab -
+        print_green "已删除相关cron任务"
+    else
+        print_yellow "未找到相关cron任务"
+    fi
+    
+    # 删除日志轮转配置
+    if [ -f /etc/logrotate.d/daily-reporter ]; then
+        rm -f /etc/logrotate.d/daily-reporter
+        print_green "已删除日志轮转配置"
+    fi
+    
+    print_blue "正在清理项目文件..."
+    
+    # 备份数据库（可选）
+    read -p "是否要备份数据库？[Y/n]: " BACKUP_DB
+    if [[ ! $BACKUP_DB =~ ^[Nn]$ ]]; then
+        BACKUP_FILE="/tmp/daily_reporter_db_backup_$(date +%Y%m%d%H%M%S).sqlite3"
+        if [ -f "$INSTALL_DIR/db.sqlite3" ]; then
+            cp "$INSTALL_DIR/db.sqlite3" "$BACKUP_FILE"
+            print_green "数据库已备份到: $BACKUP_FILE"
+        else
+            print_yellow "未找到数据库文件，跳过备份"
+        fi
+    fi
+    
+    # 删除项目文件
+    read -p "是否删除整个项目目录？[y/N]: " DELETE_DIR
+    if [[ $DELETE_DIR =~ ^[Yy]$ ]]; then
+        rm -rf "$INSTALL_DIR"
+        print_green "已删除项目目录: $INSTALL_DIR"
+    else
+        print_yellow "已保留项目目录"
+    fi
+    
+    print_green "\n============================================================"
+    print_green "              自动日报生成器卸载完成！                     "
+    print_green "============================================================"
+    print_yellow "已完成以下操作："
+    print_yellow "  - 停止并移除服务"
+    print_yellow "  - 删除Nginx配置"
+    print_yellow "  - 删除cron定时任务"
+    print_yellow "  - 删除日志轮转配置"
+    if [[ ! $BACKUP_DB =~ ^[Nn]$ ]] && [ -f "$BACKUP_FILE" ]; then
+        print_yellow "  - 备份数据库到: $BACKUP_FILE"
+    fi
+    if [[ $DELETE_DIR =~ ^[Yy]$ ]]; then
+        print_yellow "  - 删除项目目录"
+    fi
+    print_green "============================================================"
 }
 
 # 执行主函数
