@@ -511,26 +511,11 @@ setup_https() {
         fi
     fi
     
-    # 更新Nginx站点配置，确保server_name正确设置
-    sed -i "s/server_name .*;/server_name $DOMAIN_NAME;/g" /etc/nginx/sites-available/daily-reporter
-    
-    # 创建正确的Nginx配置文件以支持HTTPS
+    # 首先创建HTTP配置（不带SSL），以便Certbot可以工作
     cat > /etc/nginx/sites-available/daily-reporter << EOF
 server {
     listen 80;
     server_name $DOMAIN_NAME;
-    
-    # 重定向到HTTPS
-    location / {
-        return 301 https://\$host\$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl;
-    server_name $DOMAIN_NAME;
-    
-    # SSL证书配置将由certbot自动添加
     
     location = /favicon.ico { 
         access_log off; 
@@ -551,26 +536,67 @@ EOF
     # 启用站点配置
     ln -sf /etc/nginx/sites-available/daily-reporter /etc/nginx/sites-enabled/
     
-    # 重启Nginx以应用新配置
+    # 测试和重启Nginx，准备获取证书
+    nginx -t
+    if [ $? -ne 0 ]; then
+        print_red "Nginx配置测试失败，无法继续HTTPS配置"
+        return
+    fi
+    
     systemctl restart nginx
     
     print_yellow "正在使用Let's Encrypt获取SSL证书..."
     
-    # 使用certbot获取证书并自动配置Nginx
+    # 使用certbot获取证书
     certbot --nginx -d $DOMAIN_NAME
     
-    # 确保证书应用于正确的配置文件
+    # 检查证书是否成功获取
     if [ -f "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem" ]; then
-        # 检查配置是否已包含SSL部分
-        if ! grep -q "ssl_certificate" /etc/nginx/sites-available/daily-reporter; then
-            # 手动添加SSL证书配置
-            sed -i "/server {/a \    ssl_certificate /etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem;\n    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem;" /etc/nginx/sites-available/daily-reporter
-        fi
+        # 证书获取成功，更新Nginx配置以使用证书
+        cat > /etc/nginx/sites-available/daily-reporter << EOF
+server {
+    listen 80;
+    server_name $DOMAIN_NAME;
+    
+    # 重定向到HTTPS
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name $DOMAIN_NAME;
+    
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    
+    location = /favicon.ico { 
+        access_log off; 
+        log_not_found off; 
+    }
+    
+    location /static/ {
+        root $INSTALL_DIR;
+    }
+    
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:$INSTALL_DIR/daily_reporter.sock;
+    }
+}
+EOF
         
         # 重启Nginx以应用SSL配置
-        systemctl restart nginx
-        
-        print_green "HTTPS配置成功"
+        nginx -t
+        if [ $? -eq 0 ]; then
+            systemctl restart nginx
+            print_green "HTTPS配置成功"
+        else
+            print_red "Nginx SSL配置测试失败，请手动检查配置"
+        fi
     else
         print_red "证书获取失败，请检查域名DNS是否正确指向此服务器"
     fi
