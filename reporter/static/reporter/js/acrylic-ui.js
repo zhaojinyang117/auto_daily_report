@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', function () {
     setupEventListeners();
 });
 
+// 存储选择的背景图片URL
+let selectedBgImage = null;
+
 /**
  * 初始化亚克力UI效果
  */
@@ -106,19 +109,34 @@ function setupEventListeners() {
                 if (file.size > 5 * 1024 * 1024) { // 5MB限制
                     alert('图片大小不能超过5MB');
                     this.value = '';
+                    selectedBgImage = null;
                     return;
                 }
 
                 const reader = new FileReader();
                 reader.onload = function (e) {
-                    const imageUrl = e.target.result;
-                    applyBackgroundImage(imageUrl);
+                    // 存储图片URL，但不立即应用
+                    selectedBgImage = e.target.result;
                 };
                 reader.onerror = function () {
                     console.error('图片读取失败');
                     alert('图片读取失败,请重试');
+                    selectedBgImage = null;
                 };
                 reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // 应用背景按钮
+    const applyButton = document.getElementById('apply-bg');
+    if (applyButton) {
+        applyButton.addEventListener('click', function () {
+            if (selectedBgImage) {
+                applyBackgroundImage(selectedBgImage);
+                alert('背景图片已应用');
+            } else {
+                alert('请先选择一张图片');
             }
         });
     }
@@ -130,6 +148,7 @@ function setupEventListeners() {
             localStorage.removeItem('custom-bg-image');
             localStorage.setItem('acrylic-opacity', 0.8);
             localStorage.setItem('acrylic-blur', 12);
+            selectedBgImage = null;
             initAcrylicUI();
         });
     }
