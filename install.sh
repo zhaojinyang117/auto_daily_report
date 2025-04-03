@@ -413,10 +413,10 @@ Description=Daily Report Generator Gunicorn Daemon
 After=network.target
 
 [Service]
-User=www-data
-Group=www-data
+User=root
+Group=root
 WorkingDirectory=$INSTALL_DIR
-ExecStart=$INSTALL_DIR/.venv/bin/uv run -m gunicorn \\
+ExecStart=$INSTALL_DIR/.venv/bin/gunicorn \\
     --access-logfile - \\
     --workers 1 \\
     --bind unix:$INSTALL_DIR/daily_reporter.sock \\
@@ -429,7 +429,7 @@ EOF
     
     # 设置目录权限
     mkdir -p "$INSTALL_DIR/logs"
-    chown -R www-data:www-data "$INSTALL_DIR"
+    # 不再需要更改所有权为www-data
     
     # 重新加载systemd配置
     systemctl daemon-reload
@@ -448,18 +448,21 @@ setup_nginx() {
     # 获取服务器域名或IP
     SERVER_NAME=$(grep ALLOWED_HOSTS .env | cut -d '=' -f2 | cut -d ',' -f1)
     
-    # 创建Nginx配置文件
+    # 创建Nginx站点配置
     cat > /etc/nginx/sites-available/daily-reporter << EOF
 server {
     listen 80;
     server_name $SERVER_NAME;
-
-    location = /favicon.ico { access_log off; log_not_found off; }
+    
+    location = /favicon.ico { 
+        access_log off; 
+        log_not_found off; 
+    }
     
     location /static/ {
-        alias $INSTALL_DIR/staticfiles/;
+        root $INSTALL_DIR;
     }
-
+    
     location / {
         include proxy_params;
         proxy_pass http://unix:$INSTALL_DIR/daily_reporter.sock;
@@ -467,25 +470,11 @@ server {
 }
 EOF
     
-    # 检查proxy_params文件是否存在
-    if [ ! -f /etc/nginx/proxy_params ]; then
-        cat > /etc/nginx/proxy_params << EOF
-proxy_set_header Host \$http_host;
-proxy_set_header X-Real-IP \$remote_addr;
-proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-proxy_set_header X-Forwarded-Proto \$scheme;
-EOF
-    fi
-    
-    # 启用站点
+    # 启用站点配置
     ln -sf /etc/nginx/sites-available/daily-reporter /etc/nginx/sites-enabled/
     
     # 检查Nginx配置
     nginx -t
-    if [ $? -ne 0 ]; then
-        print_red "Nginx配置测试失败，请检查配置"
-        exit 1
-    fi
     
     # 重启Nginx
     systemctl restart nginx
