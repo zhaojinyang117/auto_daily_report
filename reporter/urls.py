@@ -13,7 +13,11 @@ urlpatterns = [
     ),
     path(
         "logout/",
-        auth_views.LogoutView.as_view(next_page="reporter:login"),
+        auth_views.LogoutView.as_view(
+            next_page="reporter:login",
+            template_name="reporter/login.html",
+            http_method_names=["get", "post"],
+        ),
         name="logout",
     ),
     path("settings/", views.UserSettingsUpdateView.as_view(), name="settings_update"),

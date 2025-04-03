@@ -59,9 +59,14 @@
                                     <i class="bi bi-person-circle"></i> {{ user.username }}
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end acrylic" aria-labelledby="navbarDropdown">
-                                    <li><a class="dropdown-item" href="{% url 'reporter:logout' %}">
-                                        <i class="bi bi-box-arrow-right"></i> 退出登录
-                                    </a></li>
+                                    <li>
+                                        <form method="post" action="{% url 'reporter:logout' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="bi bi-box-arrow-right"></i> 退出登录
+                                            </button>
+                                        </form>
+                                    </li>
                                 </ul>
                             </li>
                         {% else %}

@@ -3,32 +3,63 @@
 {% block title %}登录 - 自动日报生成器{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="card-title">用户登录</h4>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card acrylic">
+            <div class="card-header bg-transparent border-bottom-0 text-center py-4">
+                <h3 class="card-title mb-0">
+                    <i class="bi bi-person-circle me-2"></i>用户登录
+                </h3>
             </div>
-            <div class="card-body">
-                <form method="post">
+            <div class="card-body px-4 pt-0 pb-4">
+                <form method="post" class="needs-validation" novalidate>
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="{{ form.username.id_for_label }}" class="form-label">用户名</label>
-                        {{ form.username }}
+                    <div class="mb-4">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">
+                            <i class="bi bi-person me-2"></i>用户名
+                        </label>
+                        {{ form.username.as_widget|safe }}
                     </div>
-                    <div class="mb-3">
-                        <label for="{{ form.password.id_for_label }}" class="form-label">密码</label>
-                        {{ form.password }}
+                    <div class="mb-4">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">
+                            <i class="bi bi-shield-lock me-2"></i>密码
+                        </label>
+                        {{ form.password.as_widget|safe }}
                     </div>
                     {% if form.errors %}
-                        <div class="alert alert-danger" role="alert">
-                            用户名或密码不正确，请重试。
+                        <div class="alert alert-danger acrylic py-2" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>用户名或密码不正确，请重试。
                         </div>
                     {% endif %}
-                    <button type="submit" class="btn btn-primary">登录</button>
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-acrylic-primary">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>登录
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 美化表单输入框
+    document.addEventListener('DOMContentLoaded', function() {
+        // 为表单输入添加Bootstrap类
+        var usernameField = document.getElementById('{{ form.username.id_for_label }}');
+        var passwordField = document.getElementById('{{ form.password.id_for_label }}');
+        
+        if (usernameField) {
+            usernameField.classList.add('form-control', 'bg-transparent', 'border-0', 'border-bottom', 'rounded-0');
+            usernameField.placeholder = '请输入用户名';
+        }
+        
+        if (passwordField) {
+            passwordField.classList.add('form-control', 'bg-transparent', 'border-0', 'border-bottom', 'rounded-0');
+            passwordField.placeholder = '请输入密码';
+        }
+    });
+</script>
 {% endblock %} 
