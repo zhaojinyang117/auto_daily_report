@@ -190,16 +190,82 @@ setup_virtual_env() {
     # 安装依赖
     if [ -f requirements.txt ]; then
         uv sync -r requirements.txt
+        # 确保安装gunicorn和其他必要依赖
+        uv pip install gunicorn django-cron django-widget-tweaks
     elif [ -f pyproject.toml ]; then
         uv sync
+        # 确保安装gunicorn和其他必要依赖
+        uv pip install gunicorn django-cron django-widget-tweaks
     else
         uv pip install -e .
+        # 确保安装gunicorn和其他必要依赖
+        uv pip install gunicorn django-cron django-widget-tweaks
     fi
     
-    # 安装gunicorn（如果依赖中未包含）
-    if ! pip show gunicorn &> /dev/null; then
-        print_yellow "正在安装gunicorn..."
-        uv pip install gunicorn
+    # 修复 django_cron 的兼容性问题
+    print_yellow "正在修复 django_cron 兼容性问题..."
+    
+    # 手动创建临时修复文件
+    DJANGO_CRON_DIR=$(find .venv -path "*/django_cron" -type d | head -1)
+    if [ ! -z "$DJANGO_CRON_DIR" ]; then
+        MODELS_FILE="$DJANGO_CRON_DIR/models.py"
+        if [ -f "$MODELS_FILE" ]; then
+            print_yellow "找到django_cron模型文件: $MODELS_FILE"
+            
+            # 创建备份
+            cp "$MODELS_FILE" "$MODELS_FILE.bak"
+            
+            # 直接创建一个修复后的文件
+            cat > "$MODELS_FILE" << EOF
+from django.db import models
+from django.utils import timezone
+
+class CronJobLog(models.Model):
+    code = models.CharField(max_length=64, db_index=True)
+    start_time = models.DateTimeField(db_index=True)
+    end_time = models.DateTimeField(db_index=True)
+    is_success = models.BooleanField(default=False, db_index=True)
+    message = models.TextField(max_length=1000, blank=True)
+    ran_at_time = models.TimeField(db_index=True, null=True, blank=True)
+
+    class Meta:
+        app_label = 'django_cron'
+        indexes = [
+            models.Index(fields=['code', 'start_time', 'is_success']),
+            models.Index(fields=['code', 'start_time']),
+            models.Index(fields=['code', 'is_success']),
+        ]
+        ordering = ('-start_time',)
+
+    def __str__(self):
+        return f"{self.code}: {self.start_time} - {self.end_time} ({self.is_success})"
+
+
+class CronJobLock(models.Model):
+    code = models.CharField(max_length=64, primary_key=True)
+    locked_at = models.DateTimeField(default=timezone.now)
+    locked_by = models.CharField(max_length=64)
+
+    class Meta:
+        app_label = 'django_cron'
+        ordering = ('-locked_at',)
+
+    def __str__(self):
+        return f"{self.code}: {self.locked_at} ({self.locked_by})"
+EOF
+            print_green "成功修复 django_cron 库"
+        else
+            print_yellow "未找到 django_cron 的 models.py 文件，手动创建修复..."
+            
+            # 如果没有找到文件，尝试安装特定版本
+            print_yellow "尝试安装兼容的django_cron版本..."
+            uv pip uninstall -y django-cron
+            uv pip install django-cron==0.6.0
+        fi
+    else
+        print_yellow "未找到 django_cron 目录，尝试安装兼容版本..."
+        uv pip uninstall -y django-cron
+        uv pip install django-cron==0.6.0
     fi
     
     print_green "Python虚拟环境设置完成"
