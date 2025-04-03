@@ -511,7 +511,7 @@ setup_https() {
         fi
     fi
     
-    # 首先创建HTTP配置（不带SSL），以便Certbot可以工作
+    # 首先创建一个简单的HTTP配置，没有任何SSL相关指令
     cat > /etc/nginx/sites-available/daily-reporter << EOF
 server {
     listen 80;
@@ -540,15 +540,19 @@ EOF
     nginx -t
     if [ $? -ne 0 ]; then
         print_red "Nginx配置测试失败，无法继续HTTPS配置"
-        return
+        return 1
     fi
     
     systemctl restart nginx
+    if [ $? -ne 0 ]; then
+        print_red "Nginx重启失败，无法继续HTTPS配置"
+        return 1
+    fi
     
     print_yellow "正在使用Let's Encrypt获取SSL证书..."
     
-    # 使用certbot获取证书
-    certbot --nginx -d $DOMAIN_NAME
+    # 使用certbot获取证书 - 使用独立模式而不是nginx插件
+    certbot certonly --webroot -w $INSTALL_DIR/staticfiles -d $DOMAIN_NAME
     
     # 检查证书是否成功获取
     if [ -f "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem" ]; then
@@ -570,8 +574,9 @@ server {
     
     ssl_certificate /etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
     
     location = /favicon.ico { 
         access_log off; 
@@ -593,12 +598,20 @@ EOF
         nginx -t
         if [ $? -eq 0 ]; then
             systemctl restart nginx
-            print_green "HTTPS配置成功"
+            if [ $? -eq 0 ]; then
+                print_green "HTTPS配置成功"
+                return 0
+            else
+                print_red "Nginx重启失败，HTTPS配置未完成"
+                return 1
+            fi
         else
-            print_red "Nginx SSL配置测试失败，请手动检查配置"
+            print_red "Nginx SSL配置测试失败，HTTPS配置未完成"
+            return 1
         fi
     else
         print_red "证书获取失败，请检查域名DNS是否正确指向此服务器"
+        return 1
     fi
 }
 
