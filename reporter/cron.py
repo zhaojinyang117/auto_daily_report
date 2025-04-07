@@ -1,11 +1,13 @@
 import logging
 from datetime import time
 from typing import List, Optional
+import pytz
 
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db.models import Q
 from django_cron import CronJobBase, Schedule
+from django.conf import settings
 
 from reporter.models import UserSettings
 from reporter.services import send_user_report
@@ -34,13 +36,14 @@ class SendDailyReportsCronJob(CronJobBase):
         此方法检查当前时间窗口内需要发送报告的用户，并执行发送操作。
         成功时返回True，并记录统计信息。
         """
-        # 获取当前日期和时间
+        # 获取当前日期和时间（使用设置的时区）
         now = timezone.now()
-        current_time = now.time()
-        current_date = now.date()
+        local_now = now.astimezone(pytz.timezone(settings.TIME_ZONE))
+        current_time = local_now.time()
+        current_date = local_now.date()
 
         # 记录开始执行
-        logger.info(f"开始执行日报发送任务: {now.strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"开始执行日报发送任务: {local_now.strftime('%Y-%m-%d %H:%M:%S')}")
 
         # 获取当前时间窗口需要发送的用户
         users_to_process = self._get_users_for_current_time(current_time)
@@ -79,8 +82,8 @@ class SendDailyReportsCronJob(CronJobBase):
         """处理单个用户的报告"""
         logger.info(f"开始为用户[{user.username}]生成发送报告")
 
-        # 调用服务函数发送报告
-        result = send_user_report(user)
+        # 调用服务函数发送报告，标记为定时发送
+        result = send_user_report(user, is_scheduled=True)
 
         # 记录结果
         message = result["message"]
@@ -98,6 +101,7 @@ class SendDailyReportsCronJob(CronJobBase):
         1. 用户设置必须是激活状态
         2. 用户设置的发送时间与当前小时相同
         3. 当前日期必须在用户的send_days设置中（如果设置了的话）
+        4. 当前分钟必须在用户设置的发送时间的分钟到分钟+5的范围内
 
         Args:
             current_time: 当前时间
@@ -105,14 +109,20 @@ class SendDailyReportsCronJob(CronJobBase):
         Returns:
             应该在当前时间窗口处理的用户列表
         """
-        # 获取当前日期
-        today = timezone.now().date()
+        # 获取当前日期（使用设置的时区）
+        now = timezone.now()
+        local_now = now.astimezone(pytz.timezone(settings.TIME_ZONE))
+        today = local_now.date()
         current_day = str(today.day)
+        local_hour = local_now.hour
+        local_minute = local_now.minute
 
-        # 查询条件：活跃用户且发送时间小时与当前时间相符
+        logger.info(f"UTC时间: {now}, 本地时间: {local_now}, 本地小时: {local_hour}, 本地分钟: {local_minute}")
+
+        # 查询条件：活跃用户且发送时间小时与当前本地时间相符
         base_query = Q(
             settings__is_active=True,
-            settings__send_time__hour=current_time.hour,
+            settings__send_time__hour=local_hour,
         )
 
         # 获取所有符合基本条件的用户
@@ -124,6 +134,16 @@ class SendDailyReportsCronJob(CronJobBase):
         for user in base_users:
             try:
                 user_settings = UserSettings.objects.get(user=user)
+
+                # 检查当前分钟是否在用户设置的发送时间的分钟到分钟+5的范围内
+                user_minute = user_settings.send_time.minute
+                # 如果当前分钟不在用户设置的发送时间的分钟到分钟+5的范围内，则跳过
+                if not (user_minute <= local_minute < user_minute + 5):
+                    logger.info(
+                        f"用户[{user.username}]设置的发送时间分钟为{user_minute}，当前分钟{local_minute}不在发送时间窗口内，跳过"
+                    )
+                    continue
+
                 # 如果用户没有设置send_days或当前日期在send_days中，则添加到最终列表
                 if (
                     not user_settings.send_days

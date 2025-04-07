@@ -51,6 +51,8 @@ class UserSettingsForm(forms.ModelForm):
         self.fields[
             "gemini_timeout"
         ].help_text = "API请求超时时间（5-60秒），如果请求经常超时，可以适当增加"
+        self.fields["gemini_timeout"].required = False
+        self.fields["gemini_timeout"].initial = 15
         self.fields["email_password"].help_text = "邮箱密码或授权码，用于SMTP认证"
         self.fields["smtp_server"].help_text = "例如：smtp.163.com, smtp.qq.com"
         self.fields["smtp_port"].help_text = "常用端口：25(非SSL), 465(SSL), 587(TLS)"

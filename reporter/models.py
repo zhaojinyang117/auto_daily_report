@@ -146,6 +146,7 @@ class EmailLog(models.Model):
     subject = models.CharField(max_length=200, blank=True, verbose_name="邮件主题")
     content_preview = models.TextField(blank=True, verbose_name="内容预览")
     error_message = models.TextField(blank=True, null=True, verbose_name="错误信息")
+    is_scheduled = models.BooleanField(default=False, null=True, blank=True, verbose_name="定时发送")
 
     class Meta:
         verbose_name = "邮件日志"

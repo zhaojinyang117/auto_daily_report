@@ -108,7 +108,7 @@ class UserSettingsUpdateView(LoginRequiredMixin, UpdateView):
     model = UserSettings
     form_class = UserSettingsForm
     template_name = "reporter/user_settings_form.html"
-    success_url = reverse_lazy("reporter:home")
+    success_url = reverse_lazy("reporter:settings_update")
 
     def get_object(self, queryset=None):
         # 获取或创建当前用户的设置

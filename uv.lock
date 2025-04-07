@@ -43,7 +43,7 @@ dependencies = [
 requires-dist = [
     { name = "cryptography", specifier = ">=44.0.2" },
     { name = "django", specifier = ">=5.1.7" },
-    { name = "django-cron", specifier = ">=0.6.0" },
+    { name = "django-cron", specifier = "==0.6.0" },
     { name = "django-widget-tweaks", specifier = ">=1.5.0" },
     { name = "google-generativeai", specifier = ">=0.8.4" },
     { name = "gunicorn", specifier = ">=23.0.0" },

@@ -68,7 +68,7 @@ class GeminiProcessor:
     6. 绝对不要出现诸如"好的，根据您提供的内容，今天的学习要点总结如下"这样的表述
     7. 不要出现"可能"、"推测"之类的词语
     8. 不要添加任何引言和结束语，直接开始列举要点
-    
+
     原始内容：
     {content}
     """
@@ -265,6 +265,7 @@ def send_user_report(
     specific_date: Optional[date] = None,
     force_send: bool = False,
     timeout: Optional[int] = None,
+    is_scheduled: bool = False,
 ) -> Dict[str, Any]:
     """为指定用户发送报告
 
@@ -293,6 +294,7 @@ def send_user_report(
                 user=user,
                 status=EmailLog.STATUS_FAILED,
                 error_message="用户设置不存在。请先完成设置。",
+                is_scheduled=is_scheduled,
             )
             return {"success": False, "message": "用户设置不存在。请先完成设置。"}
 
@@ -303,6 +305,7 @@ def send_user_report(
                 user=user,
                 status=EmailLog.STATUS_FAILED,
                 error_message="报告功能未激活。请在设置中激活。",
+                is_scheduled=is_scheduled,
             )
             return {"success": False, "message": "报告功能未激活。请在设置中激活。"}
 
@@ -314,7 +317,7 @@ def send_user_report(
                 # 记录日志
                 error_msg = f"当前日期({target_date.strftime('%Y-%m-%d')})不在设置的发送日期列表中。"
                 EmailLog.objects.create(
-                    user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg
+                    user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg, is_scheduled=is_scheduled
                 )
                 return {
                     "success": False,
@@ -330,7 +333,7 @@ def send_user_report(
             # 记录日志
             error_msg = f"未找到 {target_date.year}年{target_date.month}月 的月度计划。"
             EmailLog.objects.create(
-                user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg
+                user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg, is_scheduled=is_scheduled
             )
             return {
                 "success": False,
@@ -343,7 +346,7 @@ def send_user_report(
             # 记录日志
             error_msg = f"在 {target_date} 未找到学习内容。"
             EmailLog.objects.create(
-                user=user, status=EmailLog.STATUS_NO_CONTENT, error_message=error_msg
+                user=user, status=EmailLog.STATUS_NO_CONTENT, error_message=error_msg, is_scheduled=is_scheduled
             )
             return {"success": False, "message": error_msg}
 
@@ -358,7 +361,7 @@ def send_user_report(
             # 记录日志
             error_msg = "邮箱配置不完整，请在设置中完成配置。"
             EmailLog.objects.create(
-                user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg
+                user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg, is_scheduled=is_scheduled
             )
             return {"success": False, "message": error_msg}
 
@@ -393,6 +396,7 @@ def send_user_report(
                         user=user,
                         status=EmailLog.STATUS_FAILED,
                         error_message=error_msg,
+                        is_scheduled=is_scheduled,
                     )
                     return {
                         "success": False,
@@ -439,6 +443,7 @@ def send_user_report(
                 status=EmailLog.STATUS_SUCCESS,
                 subject=subject,
                 content_preview=content_preview,
+                is_scheduled=is_scheduled,
             )
 
             # 如果有Gemini错误，记录在日志中
@@ -459,6 +464,7 @@ def send_user_report(
                 status=EmailLog.STATUS_FAILED,
                 subject=subject,
                 error_message=error_msg,
+                is_scheduled=is_scheduled,
             )
             return {"success": False, "message": error_msg}
 
@@ -468,7 +474,7 @@ def send_user_report(
         error_msg = f"发送报告时发生错误: {str(e)}"
         try:
             EmailLog.objects.create(
-                user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg
+                user=user, status=EmailLog.STATUS_FAILED, error_message=error_msg, is_scheduled=is_scheduled
             )
         except Exception as log_error:
             logger.exception(f"记录邮件日志失败: {log_error}")
