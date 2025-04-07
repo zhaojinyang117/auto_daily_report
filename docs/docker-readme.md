@@ -12,7 +12,7 @@
 1. 克隆仓库
 
 ```bash
-git clone -b django https://github.com/yourusername/auto_daily_report.git
+git clone -b django https://github.com/zhaojinyang117/auto_daily_report.git
 cd auto_daily_report
 ```
 
