@@ -14,6 +14,7 @@ class UserSettingsForm(forms.ModelForm):
         fields = [
             "gemini_api_key",
             "use_client_proxy",
+            "use_hf_proxy",
             "gemini_timeout",
             "email_signature_name",
             "email_signature_phone",
@@ -48,6 +49,9 @@ class UserSettingsForm(forms.ModelForm):
         self.fields[
             "use_client_proxy"
         ].help_text = "勾选后将使用浏览器的系统代理访问Gemini API"
+        self.fields[
+            "use_hf_proxy"
+        ].help_text = "勾选后将使用HuggingFace代理绕过Gemini地域限制（服务器和客户端均可使用）"
         self.fields[
             "gemini_timeout"
         ].help_text = "API请求超时时间（5-60秒），如果请求经常超时，可以适当增加"

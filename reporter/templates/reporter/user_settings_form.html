@@ -120,6 +120,12 @@
                                     <div class="form-text">{{ form.use_client_proxy.help_text }}</div>
                                 </div>
                                 
+                                <div class="mb-3 form-check">
+                                    {{ form.use_hf_proxy|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.use_hf_proxy.id_for_label }}">使用HuggingFace代理</label>
+                                    <div class="form-text">{{ form.use_hf_proxy.help_text }}</div>
+                                </div>
+                                
                                 <h5 class="mt-4 mb-3">邮件签名</h5>
                                 
                                 <div class="mb-3">

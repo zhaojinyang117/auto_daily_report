@@ -33,18 +33,33 @@
 
 ## 安装和部署
 
+> **⚠️ 重要提示：Django 5.0+ 与 django_cron 包存在兼容性问题**
+>
+> 在运行项目前，需要先修复django_cron包的兼容性问题。项目根目录下已提供修复文件，请按以下步骤操作：
+>
+> ```bash
+> # 复制修复后的文件到django_cron包目录
+> copy fixed_django_cron_models.py .venv\Lib\site-packages\django_cron\models.py
+> copy fixed_django_cron_admin.py .venv\Lib\site-packages\django_cron\admin.py
+> ```
+>
+> 这一步骤必须在运行migrate或runserver命令前完成，否则会出现TypeError错误。
+
 1. 克隆仓库（指定使用django分支）
+
 ```bash
 git clone -b django https://github.com/zhaojinyang117/auto_daily_report.git
 cd auto_daily_report
 ```
 
-# 或者如果已经克隆了仓库，可以切换到django分支
+或者如果已经克隆了仓库，可以切换到django分支
+
 ```bash
 git checkout django
 ```
 
 2. 创建并激活虚拟环境
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
@@ -53,6 +68,7 @@ source .venv/bin/activate  # Linux/Mac
 ```
 
 3. 安装依赖
+
 ```bash
 # 使用pip安装
 pip install -e .
@@ -62,25 +78,30 @@ uv sync
 ```
 
 4. 配置环境变量
+
 复制`.env.example`并重命名为`.env`，设置您的邮箱、API密钥等信息
 
 5. 初始化数据库
+
 ```bash
 python manage.py migrate
 ```
 
 6. 创建超级用户
+
 ```bash
 python manage.py createsuperuser
 ```
 
 7. 运行开发服务器
+
 ```bash
 python manage.py runserver
 ```
 
 8. 访问网站
-浏览器访问 http://127.0.0.1:8000
+
+浏览器访问 [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 ## 生产环境部署
 
@@ -100,4 +121,4 @@ python manage.py runserver
 
 ## 许可证
 
-[MIT License](LICENSE)
+[GPL License](LICENSE)

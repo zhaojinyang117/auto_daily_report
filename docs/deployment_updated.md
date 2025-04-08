@@ -1,5 +1,15 @@
 # 自动日报生成器部署指南
 
+## 版本历史
+
+| 版本   | 发布日期   | 更新内容                                              |
+|-------|------------|-----------------------------------------------------|
+| v1.2.0 | 2025-04-08 | 新增HuggingFace代理支持，可绕过Gemini API地域限制       |
+| v1.1.0 | 2025-04-03 | 添加客户端代理模式和Gemini API超时设置                  |
+| v1.0.0 | 2025-04-01 | 初始版本发布                                          |
+
+## 概述
+
 本文档详细介绍如何将自动日报生成器部署到生产环境，包括常见问题的解决方案和最佳实践。
 
 ## 系统要求
@@ -390,7 +400,46 @@ sudo chmod -R 755 /home/alice/auto_daily_report/staticfiles
 
 1. 确认API密钥是否正确
 2. 检查服务器所在地区是否支持Gemini API
-3. 考虑使用客户端代理模式，将API调用转移到前端
+3. 考虑使用以下解决方案：
+   - **客户端代理模式**：在用户设置中启用"使用客户端代理"选项，将API调用转移到前端浏览器环境
+   - **HuggingFace代理**：在用户设置中启用"使用HuggingFace代理"选项，通过HuggingFace服务绕过地域限制
+
+#### 使用HuggingFace代理绕过Gemini API地域限制
+
+自动日报生成器v1.2.0版本新增了使用HuggingFace代理绕过Gemini API地域限制的功能。对于服务器位于受限地区（如中国大陆、香港等）的用户，此功能可以帮助您正常使用Gemini API。
+
+**设置方法**：
+1. 在用户设置页面中，找到"使用HuggingFace代理"选项并勾选
+2. 保存设置
+
+**工作原理**：
+- 启用此选项后，系统将使用`https://apicheck-gemini.hf.space/hf/v1`作为代理API端点，而不是直接调用Google的官方API
+- 这一代理服务支持以下API端点：
+  ```
+  接口                方法    描述              转发目标
+  /v1/models          GET     获取可用模型列表   随机 Key
+  /hf/v1/models       GET     获取可用模型列表   随机 Key
+  /v1/chat/completions POST    进行聊天补全      随机 Key
+  /hf/v1/chat/completions POST 进行聊天补全      随机 Key
+  / 或 /health        GET     健康检查         -
+  ```
+
+**组合使用**：
+您可以根据需要组合使用不同的代理方式：
+- 不勾选任何代理选项：使用服务器环境直接调用Google API（需要服务器能够访问Google服务）
+- 仅勾选"使用客户端代理"：使用浏览器环境调用Google API（需要浏览器能够访问Google服务）
+- 勾选"使用HuggingFace代理"：使用HuggingFace代理服务调用API（服务器和浏览器环境都适用）
+
+**故障排查**：
+如果使用HuggingFace代理时仍然遇到问题，请检查：
+- 网络是否能够访问`apicheck-gemini.hf.space`域名
+- API密钥是否正确
+- 系统日志中的具体错误信息
+
+**注意事项**：
+- HuggingFace代理是由第三方提供的服务，可能存在不稳定性
+- 使用代理服务时，请确保您的API密钥安全
+- 如需最佳性能，建议在可能的情况下直接使用官方API
 
 ## 维护和更新
 
@@ -419,6 +468,20 @@ python manage.py collectstatic --noinput
 # 重启服务
 sudo systemctl restart daily-reporter
 ```
+
+#### 升级到v1.2.0版本
+
+v1.2.0版本新增了HuggingFace代理功能，可以帮助绕过Gemini API的地域限制。升级步骤：
+
+1. 按照上述步骤更新代码并执行迁移
+2. 迁移完成后，HuggingFace代理功能将自动添加到用户设置中
+3. 登录管理后台并进入"用户设置"页面
+4. 勾选"使用HuggingFace代理"选项并保存设置
+5. 重启应用后，系统将自动使用HuggingFace代理调用Gemini API
+
+如果您遇到任何问题，请查看系统日志（`/home/alice/auto_daily_report/logs/debug.log`）了解详细错误信息。
+
+注意：如果您已经在使用客户端代理模式，可以同时启用HuggingFace代理，这将使客户端代理也通过HuggingFace代理服务访问API。
 
 ### 备份数据库
 

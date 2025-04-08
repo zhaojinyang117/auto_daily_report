@@ -12,32 +12,66 @@ async function processWithClientProxy(apiData) {
         showLoadingState();
 
         // 从API数据中提取必要信息
-        const { api_key, prompt, original_content, model, timeout } = apiData;
+        const { api_key, prompt, original_content, model, timeout, use_hf_proxy } = apiData;
 
         // 设置超时时间（默认15秒）
         const timeoutMs = (timeout || 15) * 1000;
 
         console.log("使用客户端代理模式调用Gemini API");
         console.log(`API请求超时时间设置为: ${timeout || 15}秒`);
+        if (use_hf_proxy) {
+            console.log("将使用HuggingFace代理绕过Gemini地域限制");
+        }
 
         // 创建AbortController用于请求超时控制
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         try {
-            // 构建API请求
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${api_key}`, {
-                method: 'POST',
-                headers: {
+            // 确定API URL
+            let apiUrl;
+            let headers = {
+                'Content-Type': 'application/json',
+            };
+            let body;
+            
+            if (use_hf_proxy) {
+                // 使用HuggingFace代理
+                apiUrl = `https://apicheck-gemini.hf.space/hf/v1/chat/completions`;
+                headers = {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
+                    'Authorization': `Bearer ${api_key}`
+                };
+                // HuggingFace代理使用chat/completions接口的请求体格式
+                const requestBody = {
+                    model: model,
+                    messages: [
+                        {
+                            role: "user",
+                            content: prompt
+                        }
+                    ]
+                };
+                body = JSON.stringify(requestBody);
+            } else {
+                // 使用Google官方API
+                apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${api_key}`;
+                // Google API使用generateContent接口的请求体格式
+                const requestBody = {
                     contents: [{
                         parts: [{
                             text: prompt
                         }]
                     }]
-                }),
+                };
+                body = JSON.stringify(requestBody);
+            }
+            
+            // 构建API请求
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: headers,
+                body: body,
                 signal: controller.signal  // 添加AbortController信号
             });
 
@@ -52,7 +86,15 @@ async function processWithClientProxy(apiData) {
 
             // 处理响应
             const data = await response.json();
-            let processedContent = data.candidates[0]?.content?.parts[0]?.text || '';
+            let processedContent;
+            
+            if (use_hf_proxy) {
+                // 解析HuggingFace代理的chat/completions接口响应
+                processedContent = data.choices[0]?.message?.content || '';
+            } else {
+                // 解析Google API的generateContent接口响应
+                processedContent = data.candidates[0]?.content?.parts[0]?.text || '';
+            }
 
             // 应用相同的格式处理
             processedContent = formatText(processedContent);
