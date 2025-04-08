@@ -4,6 +4,7 @@
 
 | 版本   | 发布日期   | 更新内容                                              |
 |-------|------------|-----------------------------------------------------|
+| v1.2.1 | 2025-04-08 | HuggingFace代理功能默认开启                            |
 | v1.2.0 | 2025-04-08 | 新增HuggingFace代理支持，可绕过Gemini API地域限制       |
 | v1.1.0 | 2025-04-03 | 添加客户端代理模式和Gemini API超时设置                  |
 | v1.0.0 | 2025-04-01 | 初始版本发布                                          |
@@ -408,8 +409,10 @@ sudo chmod -R 755 /home/alice/auto_daily_report/staticfiles
 
 自动日报生成器v1.2.0版本新增了使用HuggingFace代理绕过Gemini API地域限制的功能。对于服务器位于受限地区（如中国大陆、香港等）的用户，此功能可以帮助您正常使用Gemini API。
 
+> **重要提示**: 从v1.2.1版本开始，HuggingFace代理功能已默认开启，无需手动设置。新安装的系统或新用户将自动使用HuggingFace代理调用Gemini API。现有用户的设置不会自动更改。
+
 **设置方法**：
-1. 在用户设置页面中，找到"使用HuggingFace代理"选项并勾选
+1. 在用户设置页面中，找到"使用HuggingFace代理"选项（v1.2.1版本默认已勾选）
 2. 保存设置
 
 **工作原理**：
@@ -466,6 +469,23 @@ python manage.py migrate
 python manage.py collectstatic --noinput
 
 # 重启服务
+sudo systemctl restart daily-reporter
+```
+
+#### 升级到v1.2.1版本
+
+v1.2.1版本将HuggingFace代理功能设置为默认开启。升级步骤：
+
+1. 按照上述步骤更新代码并执行迁移
+2. 迁移完成后，所有新用户默认会启用HuggingFace代理
+3. 现有用户的设置不会更改，如果您希望为所有现有用户启用此功能，可以运行以下管理命令：
+
+```bash
+python manage.py shell -c "from reporter.models import UserSettings; UserSettings.objects.update(use_hf_proxy=True)"
+```
+
+4. 重启服务以应用更改：
+```bash
 sudo systemctl restart daily-reporter
 ```
 

@@ -21,7 +21,7 @@ class UserSettings(models.Model):
         default=False, help_text="使用客户端代理访问Gemini API"
     )
     use_hf_proxy = models.BooleanField(
-        default=False, help_text="使用HuggingFace代理绕过Gemini地域限制"
+        default=True, help_text="使用HuggingFace代理绕过Gemini地域限制"
     )
     gemini_timeout = models.IntegerField(
         default=15, help_text="Gemini API请求超时时间（秒）"
