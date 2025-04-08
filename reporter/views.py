@@ -303,6 +303,7 @@ def extract_content_view(request, plan_id=None, specific_date=None):
                     gemini_processor = GeminiProcessor(
                         user_settings.gemini_api_key,
                         use_client_proxy=user_settings.use_client_proxy,
+                        use_hf_proxy=user_settings.use_hf_proxy,
                     )
                     # 获取处理结果
                     result = gemini_processor.format_learning_summary(content)

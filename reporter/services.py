@@ -21,17 +21,19 @@ class GeminiProcessor:
     """使用Gemini API处理内容的服务类"""
 
     def __init__(
-        self, api_key: str, use_client_proxy: bool = False, timeout: int = 15
+        self, api_key: str, use_client_proxy: bool = False, use_hf_proxy: bool = False, timeout: int = 15
     ) -> None:
         """初始化GeminiProcessor
 
         Args:
             api_key: Gemini API密钥
             use_client_proxy: 是否使用客户端代理
+            use_hf_proxy: 是否使用HuggingFace代理
             timeout: API请求超时时间（秒）
         """
         self.api_key = api_key
         self.use_client_proxy = use_client_proxy
+        self.use_hf_proxy = use_hf_proxy
         self.timeout = timeout
 
         # 配置API
@@ -41,9 +43,16 @@ class GeminiProcessor:
             self.model = None
         else:
             # 使用后端网络环境
-            genai.configure(api_key=api_key)
             self.use_backend_api = True
-            self.model = genai.GenerativeModel("gemini-2.0-flash")
+            if self.use_hf_proxy:
+                # 使用HuggingFace代理
+                logger.info("使用HuggingFace代理访问Gemini API")
+                # 这里不使用genai.configure，因为我们需要直接配置API URL
+                self.model = None  # 我们将手动构建API请求
+            else:
+                # 使用Google官方API
+                genai.configure(api_key=api_key)
+                self.model = genai.GenerativeModel("gemini-2.0-flash")
 
     def format_learning_summary(self, content: str) -> Union[str, Dict[str, Any]]:
         """使用Gemini API优化学习总结
@@ -83,16 +92,59 @@ class GeminiProcessor:
                 "original_content": content,
                 "model": "gemini-2.0-flash",
                 "timeout": self.timeout,  # 添加超时参数传递给前端
+                "use_hf_proxy": self.use_hf_proxy,  # 传递HuggingFace代理标志
             }
 
         # 使用后端API进行处理
         try:
-            # 使用request_options设置超时
-            request_options = {"timeout": self.timeout}
-            response = self.model.generate_content(
-                prompt, request_options=request_options
-            )
-            formatted_text = response.text.strip()
+            if self.use_hf_proxy:
+                # 使用HuggingFace代理API
+                logger.info("使用HuggingFace代理API进行请求")
+                import requests
+                import json
+                
+                # 设置请求超时时间
+                request_timeout = self.timeout
+                
+                # 构建请求参数
+                api_url = "https://apicheck-gemini.hf.space/hf/v1"
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {self.api_key}"
+                }
+                
+                # 构建请求体，使用chat/completions接口格式
+                payload = {
+                    "model": "gemini-2.0-flash",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ]
+                }
+                
+                # 发送请求
+                response = requests.post(
+                    f"{api_url}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=request_timeout
+                )
+                
+                # 检查响应状态
+                response.raise_for_status()
+                
+                # 解析响应，chat/completions接口的响应格式
+                result = response.json()
+                formatted_text = result["choices"][0]["message"]["content"]
+            else:
+                # 使用官方API
+                request_options = {"timeout": self.timeout}
+                response = self.model.generate_content(
+                    prompt, request_options=request_options
+                )
+                formatted_text = response.text.strip()
 
             # 处理文本格式，与old/gemini_processor.py中的格式化方式保持一致
             # 确保每个数字编号后面有双换行
@@ -381,6 +433,7 @@ def send_user_report(
                 gemini_processor = GeminiProcessor(
                     user_settings.gemini_api_key,
                     use_client_proxy=user_settings.use_client_proxy,
+                    use_hf_proxy=user_settings.use_hf_proxy,
                     timeout=api_timeout,
                 )
                 processed_result = gemini_processor.format_learning_summary(content)
