@@ -6,6 +6,41 @@
 
 项目提供了一键安装脚本，可以自动完成所有部署步骤。这是推荐的部署方式，尤其适合不熟悉Linux服务器配置的用户。
 
+### Docker配置文件说明
+
+#### 1. Dockerfile
+这个文件定义了应用的容器镜像：
+
+- 使用Python 3.12作为基础镜像
+- 安装必要的系统依赖和uv包管理器
+- 复制项目文件到容器中
+- 安装项目依赖
+- 设置启动脚本和命令
+
+#### 2. docker-compose.yml
+这个文件定义了服务组合：
+
+- **web服务**：运行Django Web应用
+- **cron服务**：运行定时任务
+- 配置网络、卷挂载和环境变量
+
+#### 3. docker-entrypoint.sh
+这个启动脚本在容器启动时执行：
+
+- 修复django_cron包的兼容性问题
+- 执行数据库迁移
+- 收集静态文件
+- 根据命令启动Web服务或cron任务
+
+#### 4. .dockerignore
+这个文件指定不需要复制到Docker镜像的文件，减小镜像大小。
+
+#### 5. .env.docker
+这是Docker环境的环境变量模板文件，用户需要复制并修改为自己的配置。
+
+#### 6. docker-readme.md
+这是Docker部署的详细说明文档，包括部署步骤、常见问题和维护指南。
+
 ### 使用一键安装脚本
 
 1. 以root权限登录您的Linux服务器
@@ -205,7 +240,7 @@ server {
     server_name example.com;
 
     location = /favicon.ico { access_log off; log_not_found off; }
-    
+
     location /static/ {
         alias /var/www/auto_daily_report/staticfiles/;
     }
@@ -491,7 +526,7 @@ CSRF_TRUSTED_ORIGINS = ['https://your-domain.com', 'http://your-domain.com']
 如果还使用IP地址访问：
 ```python
 CSRF_TRUSTED_ORIGINS = [
-    'https://your-domain.com', 
+    'https://your-domain.com',
     'http://your-domain.com',
     'http://your-ip-address',
     'https://your-ip-address'
@@ -605,4 +640,4 @@ sudo cat /var/log/nginx/error.log
 
 # Django应用日志
 cat /path/to/auto_daily_report/debug.log
-``` 
+```

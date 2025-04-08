@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+      - ./staticfiles:/app/staticfiles
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    depends_on:
+      - cron
+    networks:
+      - daily_report_network
+
+  cron:
+    build: .
+    restart: always
+    command: python manage.py runcrons
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    networks:
+      - daily_report_network
+
+networks:
+  daily_report_network:
+    driver: bridge
