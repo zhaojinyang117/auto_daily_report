@@ -1,5 +1,7 @@
 # 自动日报生成器
 
+[![wakatime](https://wakatime.com/badge/user/7dcace4a-8c3d-4c31-8e2c-ca241719b01b/project/e355a646-6665-4632-9516-ebb82540a0b3.svg)](https://wakatime.com/badge/user/7dcace4a-8c3d-4c31-8e2c-ca241719b01b/project/e355a646-6665-4632-9516-ebb82540a0b3)
+
 一个基于Web的自动报告工具，用于自动生成和发送日报。
 
 ![自动日报生成器界面预览](./image.png)
