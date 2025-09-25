@@ -7,6 +7,7 @@
 - 支持月度计划表格式，一次编辑整月内容
 - 根据当天日期自动提取对应学习内容
 - 智能日期选择：当找不到当天内容时，自动使用最近日期的内容
+- **HTML预览功能**：支持生成和预览HTML格式的日报，确保格式正确再发送
 - 从GitHub获取每日学习内容
 - 使用Gemini AI处理和格式化内容
 - 自动发送格式化的HTML邮件
@@ -88,9 +89,20 @@ LOG_LEVEL=INFO
    ```
 
 2. 运行程序：
-```bash
-python main.py
-```
+
+   **预览模式（推荐）**：
+   ```bash
+   # 生成HTML预览文件并在浏览器中打开
+   python main.py --preview
+   
+   # 生成HTML预览文件但不打开浏览器
+   python main.py --preview --no-browser
+   ```
+   
+   **直接发送模式**：
+   ```bash
+   python main.py
+   ```
 
 3. 设置定时执行：
 
@@ -146,7 +158,8 @@ python main.py
 
 ## 文件结构
 
-- `main.py`: 主程序入口
+- `main.py`: 主程序入口（支持预览和发送模式）
+- `preview_generator.py`: HTML预览生成模块
 - `scraper.py`: 内容获取模块
 - `gemini_processor.py`: AI内容处理模块
 - `email_generator.py`: 邮件内容生成器
@@ -162,6 +175,43 @@ python main.py
 - `schedule_tasks_uv.bat`: Windows下基于uv环境的定时任务脚本
 - `github_action_runner.py`: GitHub Actions运行脚本
 - `.github/workflows/`: GitHub Actions工作流配置文件
+
+## HTML预览功能
+
+新增的HTML预览功能允许您在发送邮件前预览日报的最终样式，确保格式和内容都符合预期。
+
+### 预览功能特点
+
+- **完整HTML预览**：生成包含样式的完整HTML文档
+- **专业邮件格式**：预览效果与实际邮件样式一致
+- **自动浏览器打开**：可选择是否在默认浏览器中自动打开预览
+- **配置友好**：预览模式不需要完整的邮件配置，可使用示例数据
+- **智能内容处理**：自动处理缺失的API配置，使用示例内容进行预览
+
+### 预览命令
+
+```bash
+# 生成预览并在浏览器中打开
+python main.py --preview
+
+# 生成预览但不打开浏览器
+python main.py --preview --no-browser
+
+# 查看帮助信息
+python main.py --help
+```
+
+### 预览文件位置
+
+预览文件保存在 `/tmp/` 目录下，文件名格式为：
+- `daily_report_preview_YYYYMMDD_HHMMSS.html`
+
+### 预览模式的优势
+
+1. **安全预览**：无需配置完整的邮件设置即可查看样式效果
+2. **格式验证**：确保HTML格式正确，避免邮件样式问题
+3. **内容确认**：在发送前最后确认日报内容和格式
+4. **调试友好**：出现问题时可以轻松查看生成的内容
 
 ## 月度计划表功能
 
