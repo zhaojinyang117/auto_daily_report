@@ -125,6 +125,90 @@ def extract_content_for_date(full_content: str, date: str) -> str:
         return "提取日期内容时出错"
 
 
+# 添加支持日报编辑的工具函数
+def update_daily_content_in_file(file_path: str, date: str, new_content: str) -> bool:
+    """
+    更新本地文件中指定日期的内容
+    
+    Args:
+        file_path: 本地文件路径
+        date: 日期字符串，格式为YYYY-MM-DD
+        new_content: 新的内容
+        
+    Returns:
+        bool: 是否更新成功
+    """
+    try:
+        # 读取原文件内容
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                full_content = f.read()
+        else:
+            # 如果文件不存在，创建基本结构
+            current_date = datetime.now()
+            month_header = f"<月度计划：{current_date.strftime('%Y-%m')}>\n\n"
+            full_content = month_header
+        
+        # 使用daily_editor的逻辑更新内容
+        from daily_editor import DailyEditor
+        editor = DailyEditor()
+        
+        # 提取当前日期的内容和位置
+        old_content, start_index, end_index = editor.extract_daily_content(full_content, date)
+        
+        # 构建新的日期条目
+        start_tag = f"<{date}>"
+        end_tag = f"</{date}>"
+        new_date_entry = f"{start_tag}\n{new_content.strip()}\n{end_tag}"
+        
+        if start_index == -1:
+            # 如果日期不存在，添加到文件末尾
+            updated_content = full_content.rstrip() + f"\n\n{new_date_entry}\n"
+        else:
+            # 替换原有内容
+            updated_content = (
+                full_content[:start_index] + 
+                new_date_entry + 
+                full_content[end_index:]
+            )
+        
+        # 写入文件
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(updated_content)
+            
+        logging.info(f"已更新{date}的内容到文件: {file_path}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"更新本地文件失败: {str(e)}")
+        return False
+
+
+def get_daily_content_from_file(file_path: str, date: str) -> str:
+    """
+    从本地文件获取指定日期的内容
+    
+    Args:
+        file_path: 本地文件路径
+        date: 日期字符串，格式为YYYY-MM-DD
+        
+    Returns:
+        str: 指定日期的内容
+    """
+    try:
+        if not os.path.exists(file_path):
+            return ""
+            
+        with open(file_path, 'r', encoding='utf-8') as f:
+            full_content = f.read()
+            
+        return extract_content_for_date(full_content, date)
+        
+    except Exception as e:
+        logging.error(f"从本地文件读取内容失败: {str(e)}")
+        return ""
+
+
 # 添加Scraper类
 class Scraper:
     """内容获取器类，用于从各种来源获取内容"""
@@ -141,3 +225,33 @@ class Scraper:
         """
         logging.info("开始获取内容...")
         return get_notion_content()
+    
+    def get_daily_content(self, date: str = None) -> str:
+        """获取指定日期的内容
+        
+        Args:
+            date: 日期字符串，如果为None则使用今天的日期
+            
+        Returns:
+            str: 指定日期的内容
+        """
+        if date is None:
+            # 获取当前北京时间
+            utc_now = datetime.now(timezone.utc)
+            beijing_now = utc_now + timedelta(hours=8)
+            date = beijing_now.strftime("%Y-%m-%d")
+        
+        try:
+            # 先尝试从GitHub获取
+            content = get_notion_content()
+            # 提取指定日期的内容，去掉正文标签
+            if content.startswith("<正文>") and content.endswith("</正文>"):
+                content = content[4:-5].strip()
+            return content
+        except Exception as e:
+            logging.warning(f"从GitHub获取内容失败: {str(e)}")
+            # 尝试从本地文件获取
+            local_content = get_daily_content_from_file("study_today.txt", date)
+            if local_content:
+                return f"<正文>\n{local_content}\n</正文>"
+            raise
